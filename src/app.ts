@@ -14,7 +14,7 @@ import "@babylonjs/inspector";
 import {
     Engine, Scene, ArcRotateCamera, Vector3,
     HemisphericLight, Mesh, MeshBuilder,
-    Color4, Sound, ScenePerformancePriority
+    Color4, Sound, ScenePerformancePriority, SceneLoader
 } from "@babylonjs/core";
 import {
     AdvancedDynamicTexture, TextBlock, Button,
@@ -155,11 +155,16 @@ class App {
 
         //--SCENE SETUP--
         //dont detect any inputs from this ui while the game is loading
-        this._scene.detachControl();
+        //this._scene.detachControl();
+        
         let scene = new Scene(this._engine);
         scene.clearColor = Color4.FromHexString("#096FBD");
         //creates and positions a free camera
+        
         let camera = new ArcRotateCamera("Camera", 0, 0, 10, new Vector3(0, 0, 0), scene);
+      
+        camera.attachControl(this._canvas, true);
+
         camera.setTarget(Vector3.Zero()); //targets the camera to scene origin
         var light1: HemisphericLight = new HemisphericLight("light1", new Vector3(1, 1, 0), scene);
         var sphere: Mesh = MeshBuilder.CreateSphere("sphere", { diameter: 1 }, scene);
@@ -195,6 +200,10 @@ class App {
         //--GUI--
         await this._loadGUI(scene);
 
+        //--IMPORTING MESH--
+
+        this._loadModels(scene);
+        
         //--SCENE FINISHED LOADING--
         await scene.whenReadyAsync();
         this._engine.hideLoadingUI(); //when the scene is ready, hide loading
@@ -239,6 +248,12 @@ class App {
                 textblockMenuMusic.text = "music: on";
             }
         });
+    }
+
+    private async _loadModels(scene: Scene){
+
+        SceneLoader.AppendAsync("./assets/models/","buildingScene.gltf", scene);
+
     }
 }
 new App();
