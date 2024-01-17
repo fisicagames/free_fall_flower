@@ -11,20 +11,26 @@
 
 import "@babylonjs/inspector";
 
-import { Engine, Scene, ArcRotateCamera, Vector3, 
-        HemisphericLight, Mesh, MeshBuilder, 
-        Color4, Sound } from "@babylonjs/core";
+import {
+    Engine, Scene, ArcRotateCamera, Vector3,
+    HemisphericLight, Mesh, MeshBuilder,
+    Color4, Sound, ScenePerformancePriority
+} from "@babylonjs/core";
 import {
     AdvancedDynamicTexture, TextBlock, Button,
-    Rectangle} from "@babylonjs/gui";
+    Rectangle
+} from "@babylonjs/gui";
 
 
 //WEB SITES REFERENCES:
 //https://github.com/BabylonJS/SummerFestival/tree/master
+
+//https://gui.babylonjs.com/#JSGZVD#1
 //https://colorhunt.co/palette/00bdaa400082fe346ef1e7b6
 //https://color.adobe.com/pt/create/color-wheel
+
 //https://pixabay.com/pt/music/otimista-catch-it-117676/
-//https://gui.babylonjs.com/#JSGZVD#1
+
 
 
 //enum for states
@@ -43,6 +49,9 @@ class App {
     private _engine: Engine;
     private _scene: Scene;
 
+    //Sounds
+    private _musicOn: boolean = true;
+    public music: Sound;
 
     //Game State Related
     private _state: State;
@@ -51,7 +60,6 @@ class App {
     constructor() {
 
         this._canvas = this._createCanvas();
-
         // initialize babylon scene and engine
         this._init();
 
@@ -73,7 +81,6 @@ class App {
     private _adjustCanvas(canvas: HTMLCanvasElement) {
         let screenW = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
         let screenH = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
-        //console.log(screenH, screenW, screenH / screenW);
         if (screenH / screenW < 1.8) {
             canvas.style.width = "56svh";
             canvas.style.height = "100svh"
@@ -86,8 +93,18 @@ class App {
 
     private async _init(): Promise<void> {
 
-        this._engine = new Engine(this._canvas, true);
+        this._engine = new Engine(this._canvas, true, { disableWebGL2Support: true });
+        this._engine.disableVertexArrayObjects = true;
+        this._engine.disableUniformBuffers = true;
+
         this._scene = new Scene(this._engine);
+
+        this._scene.skipPointerMovePicking = true;
+        this._scene.getAnimationRatio();
+        this._scene.performancePriority = ScenePerformancePriority.BackwardCompatible;
+
+
+
 
         // hide/show the Inspector
         window.addEventListener("keydown", (ev) => {
@@ -101,11 +118,12 @@ class App {
             }
         });
 
+
         //MAIN render loop & state machine
         await this._main();
     }
 
-    private async _main(): Promise<void>  {
+    private async _main(): Promise<void> {
 
         await this._goToStart();
 
@@ -113,14 +131,14 @@ class App {
         this._engine.runRenderLoop(() => {
             switch (this._state) {
                 case State.START:
-                    this._scene.render();        
+                    this._scene.render();
                     break;
-            
+
                 default:
                     break;
             }
 
-            
+
         });
 
         //resize if the screen is resized/rotated
@@ -147,18 +165,35 @@ class App {
         var sphere: Mesh = MeshBuilder.CreateSphere("sphere", { diameter: 1 }, scene);
 
         //--SOUNDS--
-        const music = new Sound("music", "./assets/sounds/catch-it-117676.mp3", scene, function () {
-        }, {
-            volume: 0.5,
+
+
+        const music = new Sound("music", "./assets/sounds/catch-it-117676.mp3", scene, soundReady, {
+            volume: 0.1,
             loop: true,
-            autoplay: true
+            autoplay: false,
         });
-        
+
+
+        function soundReady() {
+            this._musicOn = true;
+            if (document.visibilityState == "visible" && this._musicOn) {
+                music.play();
+                music.setVolume(0.1);
+            }
+            document.addEventListener("visibilitychange", () => {
+                //https://forum.babylonjs.com/t/pointer-over-action-vs-lost-focus/18836/3
+                if (document.visibilityState == "visible" && this._musicOn) {
+                    if (!music.isPlaying) music.play();
+                } else {
+                    music.pause();
+                }
+            })
+
+        }
+
+
         //--GUI--
-        const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("GUI", true, scene);
-
-        const loadedGUI = await advancedTexture.parseFromURLAsync("./assets/gui/guiTexture.json");
-
+        await this._loadGUI(scene);
 
         //--SCENE FINISHED LOADING--
         await scene.whenReadyAsync();
@@ -170,6 +205,40 @@ class App {
 
     }
 
+    private async _loadGUI(scene: Scene): Promise<void> {
 
+        const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("GUI", true, scene);
+        const loadedGUI = await advancedTexture.parseFromURLAsync("./assets/gui/guiTexture.json");
+
+        const rectangleMenu: Rectangle =
+            advancedTexture.getControlByName("RectangleMenu") as Rectangle;
+
+        const buttonMenuStart: Button =
+            advancedTexture.getControlByName("ButtonMenuStart") as Button;;
+
+        buttonMenuStart.onPointerUpObservable.add(function () {
+            this._state = State.START;
+            rectangleMenu.isVisible = false;
+        });
+
+        const textblockMenuMusic: TextBlock =
+            advancedTexture.getControlByName("TextblockMenuMusic") as TextBlock;
+
+        textblockMenuMusic.onPointerUpObservable.add(function () {
+
+            this.music = scene.getSoundByName('music');
+
+            if (this.music.isPlaying) {
+                this.music.stop();
+                this._musicOn = false;
+                textblockMenuMusic.text = "music: off";
+            }
+            else {
+                this.music.play();
+                this._musicOn = true;
+                textblockMenuMusic.text = "music: on";
+            }
+        });
+    }
 }
 new App();
