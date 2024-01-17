@@ -1,41 +1,175 @@
-import "@babylonjs/core/Debug/debugLayer";
-import "@babylonjs/inspector";
-import { Engine, Scene, ArcRotateCamera, Vector3, HemisphericLight, Mesh, MeshBuilder } from "@babylonjs/core";
+// Free Fall Flower (c) 2024 by Rafael João Ribeiro
 
+//See todos in the code before build:  
+//1. remove imports: inspector and debugLayer before build
+//2. change images paths.. in gui:  ./assets/gui/equation.png
+//3. Add ./ in index.html
+//4. Remove test lines //* 
+
+
+//import "@babylonjs/core/Debug/debugLayer";
+
+import "@babylonjs/inspector";
+
+import { Engine, Scene, ArcRotateCamera, Vector3, 
+        HemisphericLight, Mesh, MeshBuilder, 
+        Color4, Sound } from "@babylonjs/core";
+import {
+    AdvancedDynamicTexture, TextBlock, Button,
+    Rectangle} from "@babylonjs/gui";
+
+
+//WEB SITES REFERENCES:
+//https://github.com/BabylonJS/SummerFestival/tree/master
+//https://colorhunt.co/palette/00bdaa400082fe346ef1e7b6
+//https://color.adobe.com/pt/create/color-wheel
+//https://pixabay.com/pt/music/otimista-catch-it-117676/
+//https://gui.babylonjs.com/#JSGZVD#1
+
+
+//enum for states
+enum State {
+    START,
+    GAME,
+    LOSE,
+    WIN,
+}
+
+// App class is our entire game application
 class App {
+
+    // General Entire Application
+    private _canvas: HTMLCanvasElement;
+    private _engine: Engine;
+    private _scene: Scene;
+
+
+    //Game State Related
+    private _state: State;
+
+
     constructor() {
-        // create the canvas html element and attach it to the webpage
-        var canvas = document.createElement("canvas");
-        canvas.style.width = "100%";
-        canvas.style.height = "100%";
-        canvas.id = "gameCanvas";
-        document.body.appendChild(canvas);
+
+        this._canvas = this._createCanvas();
 
         // initialize babylon scene and engine
-        var engine = new Engine(canvas, true);
-        var scene = new Scene(engine);
+        this._init();
 
-        var camera: ArcRotateCamera = new ArcRotateCamera("Camera", Math.PI / 2, Math.PI / 2, 2, Vector3.Zero(), scene);
-        camera.attachControl(canvas, true);
-        var light1: HemisphericLight = new HemisphericLight("light1", new Vector3(1, 1, 0), scene);
-        var sphere: Mesh = MeshBuilder.CreateSphere("sphere", { diameter: 1 }, scene);
+    }
+
+    //Set up the canvas
+    private _createCanvas(): HTMLCanvasElement {
+
+        this._canvas = document.createElement("canvas");
+        this._canvas.style.width = "100%";
+        this._canvas.style.height = "100%";
+        this._canvas.id = "gameCanvas";
+        document.body.appendChild(this._canvas);
+        this._adjustCanvas(this._canvas);
+
+        return this._canvas;
+    }
+
+    private _adjustCanvas(canvas: HTMLCanvasElement) {
+        let screenW = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+        let screenH = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+        //console.log(screenH, screenW, screenH / screenW);
+        if (screenH / screenW < 1.8) {
+            canvas.style.width = "56svh";
+            canvas.style.height = "100svh"
+        }
+        else {
+            canvas.style.width = "98svw";
+            canvas.style.height = "94svh"
+        }
+    }
+
+    private async _init(): Promise<void> {
+
+        this._engine = new Engine(this._canvas, true);
+        this._scene = new Scene(this._engine);
 
         // hide/show the Inspector
         window.addEventListener("keydown", (ev) => {
             // Shift+Ctrl+Alt+I
             if (ev.shiftKey && ev.ctrlKey && ev.altKey && ev.keyCode === 73) {
-                if (scene.debugLayer.isVisible()) {
-                    scene.debugLayer.hide();
+                if (this._scene.debugLayer.isVisible()) {
+                    this._scene.debugLayer.hide();
                 } else {
-                    scene.debugLayer.show();
+                    this._scene.debugLayer.show();
                 }
             }
         });
 
-        // run the main render loop
-        engine.runRenderLoop(() => {
-            scene.render();
-        });
+        //MAIN render loop & state machine
+        await this._main();
     }
+
+    private async _main(): Promise<void>  {
+
+        await this._goToStart();
+
+        // run the main render loop
+        this._engine.runRenderLoop(() => {
+            switch (this._state) {
+                case State.START:
+                    this._scene.render();        
+                    break;
+            
+                default:
+                    break;
+            }
+
+            
+        });
+
+        //resize if the screen is resized/rotated
+        window.addEventListener('resize', () => {
+            this._engine.resize();
+        });
+
+
+    }
+
+    private async _goToStart() {
+        //make sure to wait for start to load
+        this._engine.displayLoadingUI();
+
+        //--SCENE SETUP--
+        //dont detect any inputs from this ui while the game is loading
+        this._scene.detachControl();
+        let scene = new Scene(this._engine);
+        scene.clearColor = Color4.FromHexString("#096FBD");
+        //creates and positions a free camera
+        let camera = new ArcRotateCamera("Camera", 0, 0, 10, new Vector3(0, 0, 0), scene);
+        camera.setTarget(Vector3.Zero()); //targets the camera to scene origin
+        var light1: HemisphericLight = new HemisphericLight("light1", new Vector3(1, 1, 0), scene);
+        var sphere: Mesh = MeshBuilder.CreateSphere("sphere", { diameter: 1 }, scene);
+
+        //--SOUNDS--
+        const music = new Sound("music", "./assets/sounds/catch-it-117676.mp3", scene, function () {
+        }, {
+            volume: 0.5,
+            loop: true,
+            autoplay: true
+        });
+        
+        //--GUI--
+        const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("GUI", true, scene);
+
+        const loadedGUI = await advancedTexture.parseFromURLAsync("./assets/gui/guiTexture.json");
+
+
+        //--SCENE FINISHED LOADING--
+        await scene.whenReadyAsync();
+        this._engine.hideLoadingUI(); //when the scene is ready, hide loading
+        //lastly set the current state to the start state and set the scene to the start scene
+        this._scene.dispose();
+        this._scene = scene;
+        this._state = State.START;
+
+    }
+
+
 }
 new App();
