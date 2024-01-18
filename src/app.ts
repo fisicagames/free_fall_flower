@@ -56,6 +56,8 @@ class App {
     //Game State Related
     private _state: State;
 
+    private _models: Mesh[];
+
 
     constructor() {
 
@@ -220,7 +222,6 @@ class App {
         await this._loadModels(scene);
 
 
-
         //--SCENE FINISHED LOADING--
         await scene.whenReadyAsync();
 
@@ -228,11 +229,18 @@ class App {
         root = scene.getMeshByName("__root__");
         root.rotation = new Vector3(0, 0,0);
 
-        
         this._engine.hideLoadingUI(); //when the scene is ready, hide loading
         //lastly set the current state to the start state and set the scene to the start scene
         this._scene.dispose();
         this._scene = scene;
+
+        //Get Models
+        let vase: TransformNode;
+        vase = this._scene.getTransformNodeByName("vase");
+        
+        //vase.position.z = 2;
+
+
         this._state = State.START;
 
     }
