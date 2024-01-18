@@ -9,17 +9,20 @@
 
 //import "@babylonjs/core/Debug/debugLayer";
 
-import "@babylonjs/inspector";
+//import "@babylonjs/inspector";
 
 import {
     Engine, Scene, ArcRotateCamera, Vector3,
     HemisphericLight, Mesh, MeshBuilder,
-    Color4, Sound, ScenePerformancePriority, SceneLoader, TransformNode, AbstractMesh
+    Color4, Sound, ScenePerformancePriority,
+    SceneLoader, TransformNode, AbstractMesh,
+    Matrix
 } from "@babylonjs/core";
 import {
     AdvancedDynamicTexture, TextBlock, Button,
     Rectangle
 } from "@babylonjs/gui";
+import "@babylonjs/loaders";
 
 
 //WEB SITES REFERENCES:
@@ -55,6 +58,7 @@ class App {
 
     //Game State Related
     private _state: State;
+    private _isVasePicked: boolean = false;
 
     //Models
     private _vase: TransformNode;
@@ -122,7 +126,7 @@ class App {
             }
         });
 
-        
+
 
 
         //MAIN render loop & state machine
@@ -146,15 +150,15 @@ class App {
 
                 case State.GAME:
                     //console.log("games");
-                    if (this._vase.position.y > 0){
-                        time += this._engine.getDeltaTime()/1000;
-                        this._vase.position.y = 5- 9.8/2*Math.pow(time,2);
+                    if (this._vase.position.y > 0 && this._isVasePicked == false) {
+                        time += this._engine.getDeltaTime() / 1000;
+                        this._vase.position.y = 5 - 9.8 / 2 * Math.pow(time, 2);
                     }
-                    
-                    else  {
-                        this._vase.rotate(Vector3.Backward(),Math.PI/2)
+
+                    else if (this._isVasePicked == false) {
+                        this._vase.rotate(Vector3.Backward(), Math.PI / 2)
                         this._vase.position.y = 0;
-                        console.log("time: ",time);
+                        console.log("time: ", time);
                         this._state = State.LOSE;
 
                     }
@@ -176,51 +180,74 @@ class App {
     }
 
     private async _goToStart() {
+
         //make sure to wait for start to load
         this._engine.displayLoadingUI();
 
+        //--CREATE SCENE--
+        this._scene = await this._createScene(this._engine);
+
+        //--GUI--
+        await this._loadGUI(this._scene);
+
+        //--IMPORTING MESH--
+
+        await this._loadModels(this._scene);
+
+        //--SCENE FINISHED LOADING--
+        await this._scene.whenReadyAsync();
+
+        //*
+        //this._scene.debugLayer.show();
+
+
+        let root: AbstractMesh;
+        root = this._scene.getMeshByName("__root__");
+        root.rotation = new Vector3(0, 0, 0);
+
+        //--PICK SIMPLES OR PICK RAY --
+        this._scene.onPointerDown = () => {
+            if (this._state = State.GAME) {
+                this._isVasePicked = true;
+                this._state = State.WIN;
+            }
+        }
+
+
+        this._engine.hideLoadingUI(); //when the scene is ready, hide loading
+        //lastly set the current state to the start state and set the scene to the start scene
+
+        //Get Main Models
+        this._vase = this._scene.getTransformNodeByName("vaso");
+
+    }
+
+    private async _createScene(engine: Engine) {
         //--SCENE SETUP--
+
         //dont detect any inputs from this ui while the game is loading
         //this._scene.detachControl();
-        
-        let scene = new Scene(this._engine);
+
+        let scene = new Scene(engine);
         scene.clearColor = Color4.FromHexString("#096FBD");
+
         //creates and positions a free camera
-        
+
         let camera = new ArcRotateCamera("Camera", 0, 0, 10, new Vector3(0, 0, 0), scene);
-      
-        camera.attachControl(this._canvas, true);
 
-        camera.position = new Vector3(3, 4,-12 );
+        //* camera.attachControl(this._canvas, true);
 
-        camera.setTarget(new Vector3(0,4,0)); //targets the camera to scene origin
+        camera.position = new Vector3(3, 4, -12);
+
+        camera.setTarget(new Vector3(0, 4, 0)); //targets the camera to scene origin
         var light1: HemisphericLight = new HemisphericLight("light1", new Vector3(1, 1, 0), scene);
-        light1.direction = new Vector3(-1,-1,-1);
+        light1.direction = new Vector3(-1, -1, -1);
         light1.intensity = 1.1;
         scene.imageProcessingConfiguration.contrast = 1.5;
-        
-/* 
-        var sphere: Mesh = MeshBuilder.CreateSphere("sphere", { diameter: 1 }, scene);
-        sphere.position.x = -5;
-        var sphere2: Mesh = MeshBuilder.CreateSphere("sphere", { diameter: 1 }, scene);
-        sphere2.position.x = 5;
-        var sphere3: Mesh = MeshBuilder.CreateSphere("sphere", { diameter: 1 }, scene);
-        sphere3.position.y = 5;
-        var sphere4: Mesh = MeshBuilder.CreateSphere("sphere", { diameter: 1 }, scene);
-        sphere4.position.z = 5;
-  */
 
         //--SOUNDS--
 
-
-        const music = new Sound("music", "./assets/sounds/catch-it-117676.mp3", scene, soundReady, {
-            volume: 0.1,
-            loop: true,
-            autoplay: false,
-        });
-
-
-        function soundReady() {
+        let soundReady = () => {
             this._musicOn = true;
             if (document.visibilityState == "visible" && this._musicOn) {
                 music.play();
@@ -237,39 +264,13 @@ class App {
 
         }
 
+        const music = new Sound("music", "./assets/sounds/catch-it-117676_comp.mp3", scene, soundReady, {
+            volume: 0.1,
+            loop: true,
+            autoplay: false,
+        });
 
-        //--GUI--
-        
-        await this._loadGUI(scene);
-
-        //--IMPORTING MESH--
-
-        await this._loadModels(scene);
-
-
-        //--SCENE FINISHED LOADING--
-        await scene.whenReadyAsync();
-        
-        //*
-        scene.debugLayer.show();
-
-        let  root: AbstractMesh;
-        root = scene.getMeshByName("__root__");
-        root.rotation = new Vector3(0, 0,0);
-
-        this._engine.hideLoadingUI(); //when the scene is ready, hide loading
-        //lastly set the current state to the start state and set the scene to the start scene
-        this._scene.dispose();
-        this._scene = scene;
-
-        //Get Models
-        
-        this._vase = this._scene.getTransformNodeByName("vaso");
-
-        //Transition
-        //this._state = State.START;
-        
-
+        return scene;
     }
 
     private async _loadGUI(scene: Scene): Promise<void> {
@@ -283,8 +284,8 @@ class App {
         const buttonMenuStart: Button =
             advancedTexture.getControlByName("ButtonMenuStart") as Button;;
 
-            console.log("buttonMenuStart: ", this._state);
-        buttonMenuStart.onPointerUpObservable.add(()=> {
+        console.log("buttonMenuStart: ", this._state);
+        buttonMenuStart.onPointerUpObservable.add(() => {
             console.log("buttonMenuStart: ", this._state);
             this._state = State.GAME;
             rectangleMenu.isVisible = false;
@@ -311,10 +312,10 @@ class App {
         });
     }
 
-    private async _loadModels(scene: Scene){
+    private async _loadModels(scene: Scene) {
 
-       
-        SceneLoader.AppendAsync("./assets/models/","buildingScene.gltf", scene);
+
+        SceneLoader.AppendAsync("./assets/models/", "buildingScene.gltf", scene);
 
     }
 }
