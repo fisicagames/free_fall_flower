@@ -56,13 +56,15 @@ class App {
     //Game State Related
     private _state: State;
 
-    private _models: Mesh[];
+    //Models
+    private _vase: TransformNode;
 
 
     constructor() {
 
         this._canvas = this._createCanvas();
         // initialize babylon scene and engine
+        this._state = State.START;
         this._init();
 
     }
@@ -120,6 +122,8 @@ class App {
             }
         });
 
+        
+
 
         //MAIN render loop & state machine
         await this._main();
@@ -129,11 +133,31 @@ class App {
 
         await this._goToStart();
 
+        let time: number = 0;
+
         // run the main render loop
         this._engine.runRenderLoop(() => {
+            this._scene.render();
             switch (this._state) {
                 case State.START:
-                    this._scene.render();
+                    //this._scene.render();
+                    //console.log(this._state);
+                    break;
+
+                case State.GAME:
+                    //console.log("games");
+                    if (this._vase.position.y > 0){
+                        time += this._engine.getDeltaTime()/1000;
+                        this._vase.position.y = 5- 9.8/2*Math.pow(time,2);
+                    }
+                    
+                    else  {
+                        this._vase.rotate(Vector3.Backward(),Math.PI/2)
+                        this._vase.position.y = 0;
+                        console.log("time: ",time);
+                        this._state = State.LOSE;
+
+                    }
                     break;
 
                 default:
@@ -215,6 +239,7 @@ class App {
 
 
         //--GUI--
+        
         await this._loadGUI(scene);
 
         //--IMPORTING MESH--
@@ -224,6 +249,9 @@ class App {
 
         //--SCENE FINISHED LOADING--
         await scene.whenReadyAsync();
+        
+        //*
+        scene.debugLayer.show();
 
         let  root: AbstractMesh;
         root = scene.getMeshByName("__root__");
@@ -235,13 +263,12 @@ class App {
         this._scene = scene;
 
         //Get Models
-        let vase: TransformNode;
-        vase = this._scene.getTransformNodeByName("vase");
         
-        //vase.position.z = 2;
+        this._vase = this._scene.getTransformNodeByName("vaso");
 
-
-        this._state = State.START;
+        //Transition
+        //this._state = State.START;
+        
 
     }
 
@@ -256,9 +283,12 @@ class App {
         const buttonMenuStart: Button =
             advancedTexture.getControlByName("ButtonMenuStart") as Button;;
 
-        buttonMenuStart.onPointerUpObservable.add(function () {
-            this._state = State.START;
+            console.log("buttonMenuStart: ", this._state);
+        buttonMenuStart.onPointerUpObservable.add(()=> {
+            console.log("buttonMenuStart: ", this._state);
+            this._state = State.GAME;
             rectangleMenu.isVisible = false;
+            console.log("buttonMenuStart: ", this._state);
         });
 
         const textblockMenuMusic: TextBlock =
