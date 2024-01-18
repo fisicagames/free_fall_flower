@@ -14,7 +14,7 @@ import "@babylonjs/inspector";
 import {
     Engine, Scene, ArcRotateCamera, Vector3,
     HemisphericLight, Mesh, MeshBuilder,
-    Color4, Sound, ScenePerformancePriority, SceneLoader
+    Color4, Sound, ScenePerformancePriority, SceneLoader, TransformNode, AbstractMesh
 } from "@babylonjs/core";
 import {
     AdvancedDynamicTexture, TextBlock, Button,
@@ -165,9 +165,24 @@ class App {
       
         camera.attachControl(this._canvas, true);
 
-        camera.setTarget(Vector3.Zero()); //targets the camera to scene origin
+        camera.position = new Vector3(3, 4,-12 );
+
+        camera.setTarget(new Vector3(0,4,0)); //targets the camera to scene origin
         var light1: HemisphericLight = new HemisphericLight("light1", new Vector3(1, 1, 0), scene);
+        light1.direction = new Vector3(-1,-1,-1);
+        light1.intensity = 1.1;
+        scene.imageProcessingConfiguration.contrast = 1.5;
+        
+/* 
         var sphere: Mesh = MeshBuilder.CreateSphere("sphere", { diameter: 1 }, scene);
+        sphere.position.x = -5;
+        var sphere2: Mesh = MeshBuilder.CreateSphere("sphere", { diameter: 1 }, scene);
+        sphere2.position.x = 5;
+        var sphere3: Mesh = MeshBuilder.CreateSphere("sphere", { diameter: 1 }, scene);
+        sphere3.position.y = 5;
+        var sphere4: Mesh = MeshBuilder.CreateSphere("sphere", { diameter: 1 }, scene);
+        sphere4.position.z = 5;
+  */
 
         //--SOUNDS--
 
@@ -202,10 +217,18 @@ class App {
 
         //--IMPORTING MESH--
 
-        this._loadModels(scene);
-        
+        await this._loadModels(scene);
+
+
+
         //--SCENE FINISHED LOADING--
         await scene.whenReadyAsync();
+
+        let  root: AbstractMesh;
+        root = scene.getMeshByName("__root__");
+        root.rotation = new Vector3(0, 0,0);
+
+        
         this._engine.hideLoadingUI(); //when the scene is ready, hide loading
         //lastly set the current state to the start state and set the scene to the start scene
         this._scene.dispose();
@@ -252,6 +275,7 @@ class App {
 
     private async _loadModels(scene: Scene){
 
+       
         SceneLoader.AppendAsync("./assets/models/","buildingScene.gltf", scene);
 
     }
