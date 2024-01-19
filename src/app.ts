@@ -9,14 +9,12 @@
 
 //import "@babylonjs/core/Debug/debugLayer";
 
-import "@babylonjs/inspector";
+//import "@babylonjs/inspector";
 
 import {
     Engine, Scene, ArcRotateCamera, Vector3,
-    HemisphericLight, Mesh, MeshBuilder,
-    Color4, Sound, ScenePerformancePriority,
-    SceneLoader, TransformNode, AbstractMesh,
-    Matrix
+    HemisphericLight, Color4, Sound, ScenePerformancePriority,
+    SceneLoader, TransformNode, AbstractMesh
 } from "@babylonjs/core";
 import {
     AdvancedDynamicTexture, TextBlock, Button,
@@ -28,7 +26,7 @@ import "@babylonjs/loaders";
 //WEB SITES REFERENCES:
 //https://github.com/BabylonJS/SummerFestival/tree/master
 
-//https://gui.babylonjs.com/#JSGZVD#11
+//https://gui.babylonjs.com/#JSGZVD#25
 //https://latex.codecogs.com/png.image?\huge&space;\dpi{150}{\color{white}h=\frac{g\cdot&space;t^{2}}{2}}
 //https://colorhunt.co/palette/00bdaa400082fe346ef1e7b6
 //https://color.adobe.com/pt/create/color-wheel
@@ -44,7 +42,8 @@ enum State {
     GAME,
     WIN,
     LOSE,
-    WIN_TRANSITION
+    WIN_TRANSITION,
+    LOSE_TRANSITION
 }
 
 // App class is our entire game application
@@ -69,9 +68,13 @@ class App {
 
     //GUI
     private _rectangleMenu: Rectangle;
+    private _rectangleGame: Rectangle;
+    
     private _textBlockEquation: TextBlock;
-    private _textBlockEquationTime: TextBlock;
-
+    private _textblockScoreGame: TextBlock;
+    private _textblockEnd: TextBlock;
+    
+    private _buttonMenuContinuar: Button;
 
 
     constructor() {
@@ -121,9 +124,6 @@ class App {
         this._scene.getAnimationRatio();
         this._scene.performancePriority = ScenePerformancePriority.BackwardCompatible;
 
-
-
-
         // hide/show the Inspector
         window.addEventListener("keydown", (ev) => {
             // Shift+Ctrl+Alt+I
@@ -136,9 +136,6 @@ class App {
             }
         });
 
-
-
-
         //MAIN render loop & state machine
         await this._main();
     }
@@ -149,6 +146,8 @@ class App {
 
         let time: number = 0;
         let height: number = 0;
+        let score: number = 0;
+        let lastScore: number = 0;
 
 
         // run the main render loop
@@ -163,47 +162,66 @@ class App {
                     this._restartScene();
                     time = 0;
                     height = 0;
-                    this._textBlockEquation.text = `the vase fall ${height.toFixed(1)} m`;
-                    this._textBlockEquationTime.text = `For ${time.toFixed(1)} s: `;
-                    
+                    lastScore = 0;
+                    this._textBlockEquation.text = `For ${time.toFixed(1)} s, the vase fall ${height.toFixed(1)} m`;
+
                     break;
                 //2
-                case State.GAME:                    
+                case State.GAME:
                     if (height < 4.99 && this._isVasePicked === false) {
                         this._vase.position.y = 5 - height;
-                        this._camera.setTarget(new Vector3(0, 4 - height/2 , 0)); //targets the camera to scene origin
+                        this._camera.setTarget(new Vector3(0, 4 - height / 2, 0)); //targets the camera to scene origin
                         //console.log(time, height);
-                                               
-                        this._textBlockEquation.text = `the vase fall ${height.toFixed(2)} m`;
-                        this._textBlockEquationTime.text = `After ${time.toFixed(2)} s, `;
 
+                        this._textBlockEquation.text = `Para ${time.toFixed(1)} s, a queda é de ${height.toFixed(1)} m.`;
+                        score = height;
                         time += this._engine.getDeltaTime() / 1000;
                         time = Number(time.toFixed(2));
-                        height = (9.8 * time**2)/2;
-                        
-                        
+                        height = (9.8 * time ** 2) / 2;
+
+
                     }
                     else if (this._isVasePicked === false) {
-                        
+
                         height = 5;
-                        time  = Math.sqrt(2*height/9.8);
-                        this._textBlockEquation.text = `the vase fall ${height.toFixed(2)} m`;
-                        this._textBlockEquationTime.text = `After ${time.toFixed(2)} s, `;
-                        
+                        time = Math.sqrt(2 * height / 9.8);
+                        this._textBlockEquation.text = `Para ${time.toFixed(1)} s, a queda é de ${height.toFixed(1)} m.`;
+
                         this._vase.rotate(Vector3.Backward(), Math.PI / 2)
                         this._vase.position.y = 0;
-                        this._state = State.LOSE;
+                        this._state = State.LOSE_TRANSITION;
+
+                        setInterval(() => {
+                            if (this._state === State.LOSE_TRANSITION) {
+                                this._state = State.LOSE;
+                            }      
+                        }, 1000);
+                        //this._state = State.default;
                     }
                     break;
                 //3
                 case State.WIN:
-                    {
-                        //this._rectangleMenu.isVisible = true;    
-                        //console.log("win");
-                    }
+
+                    if (score > lastScore) lastScore = score;
+
+
+                    this._textblockScoreGame.text = `Pontos: ${score.toFixed(1)} m`;
+                    this._textblockEnd.text = `Para passar o próximo nível, é necessário fazer uma pontuação maior que: ${lastScore.toFixed(1)} m.`;
+                    this._buttonMenuContinuar.textBlock.text = "Próximo nível!"
+                    this._rectangleGame.isVisible = true;
+
+                    
+                    break;
                 //4
                 case State.LOSE:
+                    console.log("in lose");
 
+                    this._textblockScoreGame.text = `Pontos: 0.0`;
+                    this._textblockEnd.text = `Para passar deste nível você precisa pegar o vaso com uma pontuação maior que: ${lastScore.toFixed(1)} m.`;
+
+                    this._buttonMenuContinuar.textBlock.text = "Tentar novamente!"
+                    this._rectangleGame.isVisible = true;
+                    this._state = State.default;
 
                     break;
 
@@ -241,7 +259,7 @@ class App {
         await this._scene.whenReadyAsync();
 
         //*
-        this._scene.debugLayer.show();
+        //this._scene.debugLayer.show();
 
 
         let root: AbstractMesh;
@@ -251,17 +269,15 @@ class App {
         //--PICK SIMPLES OR PICK RAY --
         this._scene.onPointerDown = () => {
             if (this._state === State.GAME) {
-                if(this._isVasePicked === false){
+                if (this._isVasePicked === false) {
                     this._isVasePicked = true;
                 }
                 this._state = State.WIN_TRANSITION;
+                console.log("WIN_TRANSITION");
                 setInterval(() => {
-                    if(this._state === State.WIN_TRANSITION) {
-                        console.log("transition to win")
+                    if (this._state === State.WIN_TRANSITION) {
                         this._state = State.WIN;
                     }
-                    
-                    
                 }, 1500);
             }
         }
@@ -272,7 +288,7 @@ class App {
 
         //Get Main Models
         this._vase = this._scene.getTransformNodeByName("vaso");
-        
+
     }
 
     private async _createScene(engine: Engine) {
@@ -303,7 +319,7 @@ class App {
         let soundReady = () => {
             this._musicOn = true;
             if (document.visibilityState === "visible" && this._musicOn) {
-                this.music.play();                
+                this.music.play();
             }
             document.addEventListener("visibilitychange", () => {
                 //https://forum.babylonjs.com/t/pointer-over-action-vs-lost-focus/18836/3
@@ -327,35 +343,60 @@ class App {
 
     private async _loadGUI(scene: Scene): Promise<void> {
 
-        
-        
+
+
 
         const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("GUI", true, scene);
         const loadedGUI = await advancedTexture.parseFromURLAsync("./assets/gui/guiTexture.json");
 
 
-        this._textBlockEquation = 
-        advancedTexture.getControlByName("TextBlockEquation") as TextBlock;
-        
-        this._textBlockEquationTime = 
-        advancedTexture.getControlByName("TextBlockEquationTime") as TextBlock;
+        this._textBlockEquation =
+            advancedTexture.getControlByName("TextBlockEquation") as TextBlock;
+
+        this._textblockScoreGame =
+            advancedTexture.getControlByName("TextblockScoreGame") as TextBlock;
+
+        this._textblockEnd = 
+            advancedTexture.getControlByName("TextblockEnd") as TextBlock;
 
 
 
         this._rectangleMenu =
-        advancedTexture.getControlByName("RectangleMenu") as Rectangle;
-        
+            advancedTexture.getControlByName("RectangleMenu") as Rectangle;
+
+        this._rectangleGame =
+            advancedTexture.getControlByName("RectangleGame") as Rectangle;
+
         const buttonMenu: Button =
             advancedTexture.getControlByName("ButtonMenu") as Button;
-            buttonMenu.onPointerUpObservable.add(() => {
-                this._rectangleMenu.isVisible = true;                
-                this._restartScene();
+        buttonMenu.onPointerUpObservable.add(() => {
+            this._rectangleMenu.isVisible = true;
+            this._restartScene();
+            this._state = State.default;
+        });
+
+        this._buttonMenuContinuar =         
+        advancedTexture.getControlByName("ButtonMenuContinuar") as Button;
+        buttonMenu.onPointerUpObservable.add(() => {
+            if(this._state === State.WIN){
+                
+                
                 this._state = State.default;
-            });
+
+            }
+            else if(this._state === State.LOSE){
+                
+                
+                this._state = State.default;
+
+            }
+
+            
+        });
 
 
         const buttonMenuStart: Button =
-            advancedTexture.getControlByName("ButtonMenuStart") as Button;;
+            advancedTexture.getControlByName("ButtonMenuStart") as Button;
 
         buttonMenuStart.onPointerUpObservable.add(() => {
             this._rectangleMenu.isVisible = false;
@@ -375,12 +416,12 @@ class App {
             if (this.music.isPlaying) {
                 this.music.stop();
                 this._musicOn = false;
-                textblockMenuMusic.text = "music: off";
+                textblockMenuMusic.text = "🔈";
             }
             else {
                 this.music.play();
                 this._musicOn = true;
-                textblockMenuMusic.text = "music: on";
+                textblockMenuMusic.text = "🔊";
             }
         });
     }
@@ -393,9 +434,12 @@ class App {
     }
 
     private _restartScene() {
+
+        this._rectangleGame.isVisible = false;
+
         this._vase.position.y = 5;
         this._vase.rotation = Vector3.Zero();
-        
+
         this._isVasePicked = false;
         this._camera.position = new Vector3(3, 4, -12);
         this._camera.setTarget(new Vector3(0, 4, 0)); //targets the camera to scene origin
