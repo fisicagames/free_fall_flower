@@ -42,8 +42,10 @@ enum State {
     GAME,
     WIN,
     LOSE,
-    WIN_TRANSITION,
-    LOSE_TRANSITION
+    WIN_IN,
+    WIN_OUT,
+    LOSE_IN,
+    LOSE_OUT
 }
 
 // App class is our entire game application
@@ -62,6 +64,7 @@ class App {
     private _state: State;
     private _isVasePicked: boolean = false;
     private _camera: ArcRotateCamera;
+    private _level: number = 1;
 
     //Models
     private _vase: TransformNode;
@@ -73,6 +76,7 @@ class App {
     private _textBlockEquation: TextBlock;
     private _textblockScoreGame: TextBlock;
     private _textblockEnd: TextBlock;
+    private _textblockLevel: TextBlock;
     
     private _buttonMenuContinuar: Button;
 
@@ -148,6 +152,10 @@ class App {
         let height: number = 0;
         let score: number = 0;
         let lastScore: number = 0;
+        let heightMax: number;
+        heightMax = Number((this._level * 5).toFixed(1));
+        let timeMax: number;
+        timeMax = Math.sqrt(2*heightMax/9.8);
 
 
         // run the main render loop
@@ -160,18 +168,23 @@ class App {
                 case State.START:
                     //console.log(this._state);
                     this._restartScene();
+                    heightMax = Number((this._level * 5).toFixed(1));
+                    timeMax = Math.sqrt(2*heightMax/9.8);
+
                     time = 0;
                     height = 0;
                     lastScore = 0;
-                    this._textBlockEquation.text = `For ${time.toFixed(1)} s, the vase fall ${height.toFixed(1)} m`;
+                    this._textblockLevel.text = `Nível: ${this._level}     h = ${heightMax.toFixed(1)} m     t = ${timeMax.toFixed(1)} s `;
+                    this._textBlockEquation.text =  `Para ${time.toFixed(1)} s, a queda é de ${height.toFixed(1)} m.`;
 
                     break;
                 //2
                 case State.GAME:
-                    if (height < 4.99 && this._isVasePicked === false) {
-                        this._vase.position.y = 5 - height;
-                        this._camera.setTarget(new Vector3(0, 4 - height / 2, 0)); //targets the camera to scene origin
-                        //console.log(time, height);
+                    if (height < heightMax - 0.05 && this._isVasePicked === false) {
+                        this._vase.rotation = new Vector3(0.1,0,-0.1);
+                        this._vase.position.y = 5*this._level - height;
+                        this._camera.setTarget(new Vector3(0, 5 * this._level -1 - height / 2, 0));
+                        this._camera.position = new Vector3(3, 5 * this._level -1 , -12);
 
                         this._textBlockEquation.text = `Para ${time.toFixed(1)} s, a queda é de ${height.toFixed(1)} m.`;
                         score = height;
@@ -189,10 +202,10 @@ class App {
 
                         this._vase.rotate(Vector3.Backward(), Math.PI / 2)
                         this._vase.position.y = 0;
-                        this._state = State.LOSE_TRANSITION;
+                        this._state = State.LOSE_IN;
 
                         setInterval(() => {
-                            if (this._state === State.LOSE_TRANSITION) {
+                            if (this._state === State.LOSE_IN) {
                                 this._state = State.LOSE;
                             }      
                         }, 1000);
@@ -205,23 +218,27 @@ class App {
                     if (score > lastScore) lastScore = score;
 
 
+                    this._level++;
+
                     this._textblockScoreGame.text = `Pontos: ${score.toFixed(1)} m`;
                     this._textblockEnd.text = `Para passar o próximo nível, é necessário fazer uma pontuação maior que: ${lastScore.toFixed(1)} m.`;
                     this._buttonMenuContinuar.textBlock.text = "Próximo nível!"
                     this._rectangleGame.isVisible = true;
 
-                    
+                    this._state = State.WIN_OUT;
+
+                                        
                     break;
+
                 //4
                 case State.LOSE:
-                    console.log("in lose");
 
                     this._textblockScoreGame.text = `Pontos: 0.0`;
                     this._textblockEnd.text = `Para passar deste nível você precisa pegar o vaso com uma pontuação maior que: ${lastScore.toFixed(1)} m.`;
 
                     this._buttonMenuContinuar.textBlock.text = "Tentar novamente!"
                     this._rectangleGame.isVisible = true;
-                    this._state = State.default;
+                    this._state = State.LOSE_OUT;
 
                     break;
 
@@ -272,10 +289,9 @@ class App {
                 if (this._isVasePicked === false) {
                     this._isVasePicked = true;
                 }
-                this._state = State.WIN_TRANSITION;
-                console.log("WIN_TRANSITION");
+                this._state = State.WIN_IN;
                 setInterval(() => {
-                    if (this._state === State.WIN_TRANSITION) {
+                    if (this._state === State.WIN_IN) {
                         this._state = State.WIN;
                     }
                 }, 1500);
@@ -349,45 +365,42 @@ class App {
         const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("GUI", true, scene);
         const loadedGUI = await advancedTexture.parseFromURLAsync("./assets/gui/guiTexture.json");
 
+        this._textBlockEquation = advancedTexture.getControlByName("TextBlockEquation") as TextBlock;
 
-        this._textBlockEquation =
-            advancedTexture.getControlByName("TextBlockEquation") as TextBlock;
+        this._textblockScoreGame = advancedTexture.getControlByName("TextblockScoreGame") as TextBlock;
 
-        this._textblockScoreGame =
-            advancedTexture.getControlByName("TextblockScoreGame") as TextBlock;
+        this._textblockEnd = advancedTexture.getControlByName("TextblockEnd") as TextBlock;
 
-        this._textblockEnd = 
-            advancedTexture.getControlByName("TextblockEnd") as TextBlock;
+        this._textblockLevel = advancedTexture.getControlByName("TextblockLevel") as TextBlock;
 
+        this._rectangleMenu = advancedTexture.getControlByName("RectangleMenu") as Rectangle;
 
+        this._rectangleGame = advancedTexture.getControlByName("RectangleGame") as Rectangle;
 
-        this._rectangleMenu =
-            advancedTexture.getControlByName("RectangleMenu") as Rectangle;
-
-        this._rectangleGame =
-            advancedTexture.getControlByName("RectangleGame") as Rectangle;
-
-        const buttonMenu: Button =
-            advancedTexture.getControlByName("ButtonMenu") as Button;
+        const buttonMenu: Button = advancedTexture.getControlByName("ButtonMenu") as Button;
         buttonMenu.onPointerUpObservable.add(() => {
             this._rectangleMenu.isVisible = true;
             this._restartScene();
             this._state = State.default;
         });
 
-        this._buttonMenuContinuar =         
-        advancedTexture.getControlByName("ButtonMenuContinuar") as Button;
-        buttonMenu.onPointerUpObservable.add(() => {
-            if(this._state === State.WIN){
+        this._buttonMenuContinuar = advancedTexture.getControlByName("ButtonMenuContinuar") as Button;
+        this._buttonMenuContinuar.onPointerUpObservable.add(() => {
+
+            if(this._state === State.WIN_OUT){
                 
-                
-                this._state = State.default;
+                this._state = State.START;
+                setTimeout(() => {
+                    this._state = State.GAME;
+                }, 2000);
 
             }
-            else if(this._state === State.LOSE){
+            else if(this._state === State.LOSE_OUT){
                 
-                
-                this._state = State.default;
+                this._state = State.START;
+                setTimeout(() => {
+                    this._state = State.GAME;
+                }, 2000);
 
             }
 
@@ -435,17 +448,18 @@ class App {
 
     private _restartScene() {
 
+        
+
         this._rectangleGame.isVisible = false;
 
-        this._vase.position.y = 5;
+        this._vase.position.y = 5 * this._level;
         this._vase.rotation = Vector3.Zero();
 
         this._isVasePicked = false;
-        this._camera.position = new Vector3(3, 4, -12);
-        this._camera.setTarget(new Vector3(0, 4, 0)); //targets the camera to scene origin
+        this._camera.position = new Vector3(3, 5 * this._level -1 , -12);
+        this._camera.setTarget(new Vector3(0, 5 * this._level -1, 0)); //targets the camera to scene origin
 
-        this._state = State.default;
-
+    
 
         //this._state = State.GAME;
     };
