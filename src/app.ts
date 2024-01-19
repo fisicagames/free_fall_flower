@@ -9,7 +9,7 @@
 
 //import "@babylonjs/core/Debug/debugLayer";
 
-//import "@babylonjs/inspector";
+import "@babylonjs/inspector";
 
 import {
     Engine, Scene, ArcRotateCamera, Vector3,
@@ -28,7 +28,8 @@ import "@babylonjs/loaders";
 //WEB SITES REFERENCES:
 //https://github.com/BabylonJS/SummerFestival/tree/master
 
-//https://gui.babylonjs.com/#JSGZVD#1
+//https://gui.babylonjs.com/#JSGZVD#11
+//https://latex.codecogs.com/png.image?\huge&space;\dpi{150}{\color{white}h=\frac{g\cdot&space;t^{2}}{2}}
 //https://colorhunt.co/palette/00bdaa400082fe346ef1e7b6
 //https://color.adobe.com/pt/create/color-wheel
 
@@ -38,10 +39,12 @@ import "@babylonjs/loaders";
 
 //enum for states
 enum State {
+    default,
     START,
     GAME,
-    LOSE,
     WIN,
+    LOSE,
+    WIN_TRANSITION
 }
 
 // App class is our entire game application
@@ -59,9 +62,16 @@ class App {
     //Game State Related
     private _state: State;
     private _isVasePicked: boolean = false;
+    private _camera: ArcRotateCamera;
 
     //Models
     private _vase: TransformNode;
+
+    //GUI
+    private _rectangleMenu: Rectangle;
+    private _textBlockEquation: TextBlock;
+    private _textBlockEquationTime: TextBlock;
+
 
 
     constructor() {
@@ -135,33 +145,66 @@ class App {
 
     private async _main(): Promise<void> {
 
-        await this._goToStart();
+        await this._startGame();
 
         let time: number = 0;
+        let height: number = 0;
+
 
         // run the main render loop
         this._engine.runRenderLoop(() => {
+
             this._scene.render();
+
             switch (this._state) {
+                //1
                 case State.START:
-                    //this._scene.render();
                     //console.log(this._state);
+                    this._restartScene();
+                    time = 0;
+                    height = 0;
+                    this._textBlockEquation.text = `the vase fall ${height.toFixed(1)} m`;
+                    this._textBlockEquationTime.text = `For ${time.toFixed(1)} s: `;
+                    
                     break;
+                //2
+                case State.GAME:                    
+                    if (height < 4.99 && this._isVasePicked === false) {
+                        this._vase.position.y = 5 - height;
+                        this._camera.setTarget(new Vector3(0, 4 - height/2 , 0)); //targets the camera to scene origin
+                        //console.log(time, height);
+                                               
+                        this._textBlockEquation.text = `the vase fall ${height.toFixed(2)} m`;
+                        this._textBlockEquationTime.text = `After ${time.toFixed(2)} s, `;
 
-                case State.GAME:
-                    //console.log("games");
-                    if (this._vase.position.y > 0 && this._isVasePicked == false) {
                         time += this._engine.getDeltaTime() / 1000;
-                        this._vase.position.y = 5 - 9.8 / 2 * Math.pow(time, 2);
+                        time = Number(time.toFixed(2));
+                        height = (9.8 * time**2)/2;
+                        
+                        
                     }
-
-                    else if (this._isVasePicked == false) {
+                    else if (this._isVasePicked === false) {
+                        
+                        height = 5;
+                        time  = Math.sqrt(2*height/9.8);
+                        this._textBlockEquation.text = `the vase fall ${height.toFixed(2)} m`;
+                        this._textBlockEquationTime.text = `After ${time.toFixed(2)} s, `;
+                        
                         this._vase.rotate(Vector3.Backward(), Math.PI / 2)
                         this._vase.position.y = 0;
-                        console.log("time: ", time);
                         this._state = State.LOSE;
-
                     }
+                    break;
+                //3
+                case State.WIN:
+                    {
+                        //this._rectangleMenu.isVisible = true;    
+                        //console.log("win");
+                    }
+                //4
+                case State.LOSE:
+
+
                     break;
 
                 default:
@@ -179,7 +222,7 @@ class App {
 
     }
 
-    private async _goToStart() {
+    private async _startGame() {
 
         //make sure to wait for start to load
         this._engine.displayLoadingUI();
@@ -198,7 +241,7 @@ class App {
         await this._scene.whenReadyAsync();
 
         //*
-        //this._scene.debugLayer.show();
+        this._scene.debugLayer.show();
 
 
         let root: AbstractMesh;
@@ -207,9 +250,19 @@ class App {
 
         //--PICK SIMPLES OR PICK RAY --
         this._scene.onPointerDown = () => {
-            if (this._state = State.GAME) {
-                this._isVasePicked = true;
-                this._state = State.WIN;
+            if (this._state === State.GAME) {
+                if(this._isVasePicked === false){
+                    this._isVasePicked = true;
+                }
+                this._state = State.WIN_TRANSITION;
+                setInterval(() => {
+                    if(this._state === State.WIN_TRANSITION) {
+                        console.log("transition to win")
+                        this._state = State.WIN;
+                    }
+                    
+                    
+                }, 1500);
             }
         }
 
@@ -219,7 +272,7 @@ class App {
 
         //Get Main Models
         this._vase = this._scene.getTransformNodeByName("vaso");
-
+        
     }
 
     private async _createScene(engine: Engine) {
@@ -233,13 +286,13 @@ class App {
 
         //creates and positions a free camera
 
-        let camera = new ArcRotateCamera("Camera", 0, 0, 10, new Vector3(0, 0, 0), scene);
+        this._camera = new ArcRotateCamera("Camera", 0, 0, 10, new Vector3(0, 0, 0), scene);
 
         //* camera.attachControl(this._canvas, true);
 
-        camera.position = new Vector3(3, 4, -12);
+        this._camera.position = new Vector3(3, 4, -12);
 
-        camera.setTarget(new Vector3(0, 4, 0)); //targets the camera to scene origin
+        this._camera.setTarget(new Vector3(0, 4, 0)); //targets the camera to scene origin
         var light1: HemisphericLight = new HemisphericLight("light1", new Vector3(1, 1, 0), scene);
         light1.direction = new Vector3(-1, -1, -1);
         light1.intensity = 1.1;
@@ -249,23 +302,22 @@ class App {
 
         let soundReady = () => {
             this._musicOn = true;
-            if (document.visibilityState == "visible" && this._musicOn) {
-                music.play();
-                music.setVolume(0.1);
+            if (document.visibilityState === "visible" && this._musicOn) {
+                this.music.play();                
             }
             document.addEventListener("visibilitychange", () => {
                 //https://forum.babylonjs.com/t/pointer-over-action-vs-lost-focus/18836/3
-                if (document.visibilityState == "visible" && this._musicOn) {
-                    if (!music.isPlaying) music.play();
+                if (document.visibilityState === "visible" && this._musicOn) {
+                    if (!this.music.isPlaying) this.music.play();
                 } else {
-                    music.pause();
+                    this.music.pause();
                 }
             })
 
         }
 
-        const music = new Sound("music", "./assets/sounds/catch-it-117676_comp.mp3", scene, soundReady, {
-            volume: 0.1,
+        this.music = new Sound("music", "./assets/sounds/catch-it-117676_comp.mp3", scene, soundReady, {
+            volume: 0.3,
             loop: true,
             autoplay: false,
         });
@@ -275,27 +327,48 @@ class App {
 
     private async _loadGUI(scene: Scene): Promise<void> {
 
+        
+        
+
         const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("GUI", true, scene);
         const loadedGUI = await advancedTexture.parseFromURLAsync("./assets/gui/guiTexture.json");
 
-        const rectangleMenu: Rectangle =
-            advancedTexture.getControlByName("RectangleMenu") as Rectangle;
+
+        this._textBlockEquation = 
+        advancedTexture.getControlByName("TextBlockEquation") as TextBlock;
+        
+        this._textBlockEquationTime = 
+        advancedTexture.getControlByName("TextBlockEquationTime") as TextBlock;
+
+
+
+        this._rectangleMenu =
+        advancedTexture.getControlByName("RectangleMenu") as Rectangle;
+        
+        const buttonMenu: Button =
+            advancedTexture.getControlByName("ButtonMenu") as Button;
+            buttonMenu.onPointerUpObservable.add(() => {
+                this._rectangleMenu.isVisible = true;                
+                this._restartScene();
+                this._state = State.default;
+            });
+
 
         const buttonMenuStart: Button =
             advancedTexture.getControlByName("ButtonMenuStart") as Button;;
 
-        console.log("buttonMenuStart: ", this._state);
         buttonMenuStart.onPointerUpObservable.add(() => {
-            console.log("buttonMenuStart: ", this._state);
-            this._state = State.GAME;
-            rectangleMenu.isVisible = false;
-            console.log("buttonMenuStart: ", this._state);
+            this._rectangleMenu.isVisible = false;
+            this._state = State.START;
+            setTimeout(() => {
+                this._state = State.GAME;
+            }, 2000);
         });
 
         const textblockMenuMusic: TextBlock =
             advancedTexture.getControlByName("TextblockMenuMusic") as TextBlock;
 
-        textblockMenuMusic.onPointerUpObservable.add(function () {
+        textblockMenuMusic.onPointerUpObservable.add(() => {
 
             this.music = scene.getSoundByName('music');
 
@@ -318,5 +391,19 @@ class App {
         SceneLoader.AppendAsync("./assets/models/", "buildingScene.gltf", scene);
 
     }
+
+    private _restartScene() {
+        this._vase.position.y = 5;
+        this._vase.rotation = Vector3.Zero();
+        
+        this._isVasePicked = false;
+        this._camera.position = new Vector3(3, 4, -12);
+        this._camera.setTarget(new Vector3(0, 4, 0)); //targets the camera to scene origin
+
+        this._state = State.default;
+
+
+        //this._state = State.GAME;
+    };
 }
 new App();

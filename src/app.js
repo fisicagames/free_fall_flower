@@ -7,15 +7,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+import "@babylonjs/inspector";
 import { Engine, Scene, ArcRotateCamera, Vector3, HemisphericLight, Color4, Sound, ScenePerformancePriority, SceneLoader } from "@babylonjs/core";
 import { AdvancedDynamicTexture } from "@babylonjs/gui";
 import "@babylonjs/loaders";
 var State;
 (function (State) {
-    State[State["START"] = 0] = "START";
-    State[State["GAME"] = 1] = "GAME";
-    State[State["LOSE"] = 2] = "LOSE";
+    State[State["default"] = 0] = "default";
+    State[State["START"] = 1] = "START";
+    State[State["GAME"] = 2] = "GAME";
     State[State["WIN"] = 3] = "WIN";
+    State[State["LOSE"] = 4] = "LOSE";
+    State[State["WIN_TRANSITION"] = 5] = "WIN_TRANSITION";
 })(State || (State = {}));
 class App {
     constructor() {
@@ -61,7 +64,19 @@ class App {
             writable: true,
             value: false
         });
+        Object.defineProperty(this, "_camera", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         Object.defineProperty(this, "_vase", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_rectangleMenu", {
             enumerable: true,
             configurable: true,
             writable: true,
@@ -116,24 +131,32 @@ class App {
     }
     _main() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this._goToStart();
+            yield this._startGame();
             let time = 0;
             this._engine.runRenderLoop(() => {
                 this._scene.render();
                 switch (this._state) {
                     case State.START:
+                        this._restartScene();
+                        time = 0;
                         break;
                     case State.GAME:
-                        if (this._vase.position.y > 0 && this._isVasePicked == false) {
+                        if (this._vase.position.y > 0 && this._isVasePicked === false) {
+                            console.log("Dentro do primeiro if ", this._state);
                             time += this._engine.getDeltaTime() / 1000;
                             this._vase.position.y = 5 - 9.8 / 2 * Math.pow(time, 2);
+                            this._camera.setTarget(new Vector3(0, 4 - 4.5 / 2 * Math.pow(time, 2), 0));
                         }
-                        else if (this._isVasePicked == false) {
+                        else if (this._isVasePicked === false) {
                             this._vase.rotate(Vector3.Backward(), Math.PI / 2);
                             this._vase.position.y = 0;
-                            console.log("time: ", time);
                             this._state = State.LOSE;
                         }
+                        break;
+                    case State.WIN:
+                        {
+                        }
+                    case State.LOSE:
                         break;
                     default:
                         break;
@@ -144,20 +167,29 @@ class App {
             });
         });
     }
-    _goToStart() {
+    _startGame() {
         return __awaiter(this, void 0, void 0, function* () {
             this._engine.displayLoadingUI();
             this._scene = yield this._createScene(this._engine);
             yield this._loadGUI(this._scene);
             yield this._loadModels(this._scene);
             yield this._scene.whenReadyAsync();
+            this._scene.debugLayer.show();
             let root;
             root = this._scene.getMeshByName("__root__");
             root.rotation = new Vector3(0, 0, 0);
             this._scene.onPointerDown = () => {
-                if (this._state = State.GAME) {
-                    this._isVasePicked = true;
-                    this._state = State.WIN;
+                if (this._state === State.GAME) {
+                    if (this._isVasePicked === false) {
+                        this._isVasePicked = true;
+                    }
+                    this._state = State.WIN_TRANSITION;
+                    setInterval(() => {
+                        if (this._state === State.WIN_TRANSITION) {
+                            console.log("transition to win");
+                            this._state = State.WIN;
+                        }
+                    }, 1500);
                 }
             };
             this._engine.hideLoadingUI();
@@ -168,31 +200,30 @@ class App {
         return __awaiter(this, void 0, void 0, function* () {
             let scene = new Scene(engine);
             scene.clearColor = Color4.FromHexString("#096FBD");
-            let camera = new ArcRotateCamera("Camera", 0, 0, 10, new Vector3(0, 0, 0), scene);
-            camera.position = new Vector3(3, 4, -12);
-            camera.setTarget(new Vector3(0, 4, 0));
+            this._camera = new ArcRotateCamera("Camera", 0, 0, 10, new Vector3(0, 0, 0), scene);
+            this._camera.position = new Vector3(3, 4, -12);
+            this._camera.setTarget(new Vector3(0, 4, 0));
             var light1 = new HemisphericLight("light1", new Vector3(1, 1, 0), scene);
             light1.direction = new Vector3(-1, -1, -1);
             light1.intensity = 1.1;
             scene.imageProcessingConfiguration.contrast = 1.5;
             let soundReady = () => {
                 this._musicOn = true;
-                if (document.visibilityState == "visible" && this._musicOn) {
-                    music.play();
-                    music.setVolume(0.1);
+                if (document.visibilityState === "visible" && this._musicOn) {
+                    this.music.play();
                 }
                 document.addEventListener("visibilitychange", () => {
-                    if (document.visibilityState == "visible" && this._musicOn) {
-                        if (!music.isPlaying)
-                            music.play();
+                    if (document.visibilityState === "visible" && this._musicOn) {
+                        if (!this.music.isPlaying)
+                            this.music.play();
                     }
                     else {
-                        music.pause();
+                        this.music.pause();
                     }
                 });
             };
-            const music = new Sound("music", "./assets/sounds/catch-it-117676_comp.mp3", scene, soundReady, {
-                volume: 0.1,
+            this.music = new Sound("music", "./assets/sounds/catch-it-117676_comp.mp3", scene, soundReady, {
+                volume: 0.3,
                 loop: true,
                 autoplay: false,
             });
@@ -203,18 +234,25 @@ class App {
         return __awaiter(this, void 0, void 0, function* () {
             const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("GUI", true, scene);
             const loadedGUI = yield advancedTexture.parseFromURLAsync("./assets/gui/guiTexture.json");
-            const rectangleMenu = advancedTexture.getControlByName("RectangleMenu");
+            this._rectangleMenu =
+                advancedTexture.getControlByName("RectangleMenu");
+            const buttonMenu = advancedTexture.getControlByName("ButtonMenu");
+            buttonMenu.onPointerUpObservable.add(() => {
+                this._rectangleMenu.isVisible = true;
+                this._restartScene();
+                this._state = State.default;
+            });
             const buttonMenuStart = advancedTexture.getControlByName("ButtonMenuStart");
             ;
-            console.log("buttonMenuStart: ", this._state);
             buttonMenuStart.onPointerUpObservable.add(() => {
-                console.log("buttonMenuStart: ", this._state);
-                this._state = State.GAME;
-                rectangleMenu.isVisible = false;
-                console.log("buttonMenuStart: ", this._state);
+                this._rectangleMenu.isVisible = false;
+                this._state = State.START;
+                setTimeout(() => {
+                    this._state = State.GAME;
+                }, 2000);
             });
             const textblockMenuMusic = advancedTexture.getControlByName("TextblockMenuMusic");
-            textblockMenuMusic.onPointerUpObservable.add(function () {
+            textblockMenuMusic.onPointerUpObservable.add(() => {
                 this.music = scene.getSoundByName('music');
                 if (this.music.isPlaying) {
                     this.music.stop();
@@ -234,5 +272,14 @@ class App {
             SceneLoader.AppendAsync("./assets/models/", "buildingScene.gltf", scene);
         });
     }
+    _restartScene() {
+        this._vase.position.y = 5;
+        this._vase.rotation = Vector3.Zero();
+        this._isVasePicked == false;
+        this._camera.position = new Vector3(3, 4, -12);
+        this._camera.setTarget(new Vector3(0, 4, 0));
+        this._state = State.default;
+    }
+    ;
 }
 new App();
