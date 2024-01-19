@@ -9,7 +9,7 @@
 
 //import "@babylonjs/core/Debug/debugLayer";
 
-import "@babylonjs/inspector";
+//import "@babylonjs/inspector";
 
 import {
     Engine, Scene, ArcRotateCamera, Vector3,
@@ -277,7 +277,7 @@ class App {
         await this._scene.whenReadyAsync();
 
         //*
-        this._scene.debugLayer.show();
+        //this._scene.debugLayer.show();
 
 
         let root: AbstractMesh;
@@ -389,7 +389,13 @@ class App {
         this._buttonMenuContinuar.onPointerUpObservable.add(() => {
 
             if(this._state === State.WIN_OUT){
-                
+
+                let newFloor: TransformNode;
+                    
+                newFloor = this._scene.getTransformNodeByName("building1").instantiateHierarchy();
+    
+                newFloor.position.y += ((this._level -1) * 2.5);
+
                 this._state = State.START;
                 setTimeout(() => {
                     this._state = State.GAME;
@@ -458,7 +464,9 @@ class App {
         this._camera.position = new Vector3(3, 2.5*(this._level +1) -1 , -12);
         this._camera.setTarget(new Vector3(0, 2.5*(this._level +1) -1, 0)); //targets the camera to scene origin
 
-    
+
+        this._state = State.default;
+  
 
         //this._state = State.GAME;
     };
