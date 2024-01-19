@@ -9,7 +9,7 @@
 
 //import "@babylonjs/core/Debug/debugLayer";
 
-import "@babylonjs/inspector";
+//import "@babylonjs/inspector";
 
 import {
     Engine, Scene, ArcRotateCamera, Vector3,
@@ -65,20 +65,23 @@ class App {
     private _isVasePicked: boolean = false;
     private _camera: ArcRotateCamera;
     private _level: number = 1;
+    private _lastScore: number = 0;
+    private _bestScore: number = 0; //*
 
     //Models
     private _vase: TransformNode;
-    private _firstFloorModels: TransformNode[];
+    private _extraFloors: TransformNode[] = [];
 
     //GUI
     private _rectangleMenu: Rectangle;
     private _rectangleGame: Rectangle;
-    
+
     private _textBlockEquation: TextBlock;
     private _textblockScoreGame: TextBlock;
     private _textblockEnd: TextBlock;
     private _textblockLevel: TextBlock;
-    
+    private _textblockMenuBest: TextBlock;
+
     private _buttonMenuContinuar: Button;
 
 
@@ -152,11 +155,10 @@ class App {
         let time: number = 0;
         let height: number = 0;
         let score: number = 0;
-        let lastScore: number = 0;
         let heightMax: number;
-        heightMax = Number((2.5*(this._level +1)).toFixed(1));
+        heightMax = Number((2.5 * (this._level + 1)).toFixed(1));
         let timeMax: number;
-        timeMax = Math.sqrt(2*heightMax/9.8);
+        timeMax = Math.sqrt(2 * heightMax / 9.8);
 
 
         // run the main render loop
@@ -169,23 +171,22 @@ class App {
                 case State.START:
                     //console.log(this._state);
                     this._restartScene();
-                    heightMax = Number((2.5*(this._level +1)).toFixed(1));
-                    timeMax = Math.sqrt(2*heightMax/9.8);
+                    heightMax = Number((2.5 * (this._level + 1)).toFixed(1));
+                    timeMax = Math.sqrt(2 * heightMax / 9.8);
 
                     time = 0;
                     height = 0;
-                    lastScore = 0;
                     this._textblockLevel.text = `Nível: ${this._level}     h = ${heightMax.toFixed(1)} m     t = ${timeMax.toFixed(1)} s `;
-                    this._textBlockEquation.text =  `Para ${time.toFixed(1)} s, a queda é de ${height.toFixed(1)} m.`;
+                    this._textBlockEquation.text = `Para ${time.toFixed(1)} s, a queda é de ${height.toFixed(1)} m.`;
 
                     break;
                 //2
                 case State.GAME:
                     if (height < heightMax - 0.05 && this._isVasePicked === false) {
-                        this._vase.rotation = new Vector3(0.1,0,-0.1);
+                        this._vase.rotation = new Vector3(0.1, 0, -0.1);
                         this._vase.position.y = heightMax - height;
-                        this._camera.setTarget(new Vector3(0, 2.5*(this._level +1) -1 - height, 0));
-                        this._camera.position = new Vector3(3, 2.5*(this._level +1) -1 , -12);
+                        this._camera.setTarget(new Vector3(0, 2.5 * (this._level + 1) - 1 - height, 0));
+                        this._camera.position = new Vector3(3, 2.5 * (this._level + 1) - 1, -12);
 
                         this._textBlockEquation.text = `Para ${time.toFixed(1)} s, a queda é de ${height.toFixed(1)} m.`;
                         score = height;
@@ -197,7 +198,7 @@ class App {
                     }
                     else if (this._isVasePicked === false) {
 
-                        height = 2.5*(this._level +1);
+                        height = 2.5 * (this._level + 1);
                         time = Math.sqrt(2 * height / 9.8);
                         this._textBlockEquation.text = `Para ${time.toFixed(1)} s, a queda é de ${height.toFixed(1)} m.`;
 
@@ -208,36 +209,57 @@ class App {
                         setInterval(() => {
                             if (this._state === State.LOSE_IN) {
                                 this._state = State.LOSE;
-                            }      
+                            }
                         }, 1000);
                         //this._state = State.default;
+                    }
+                    else if (this._isVasePicked === true) {
+                        console.log("win or lose", height, this._lastScore);
+
+                        if (score > this._lastScore) {
+                            this._lastScore = score;
+                            if (this._lastScore > this._bestScore) {
+                                this._bestScore = this._lastScore;
+                                this._textblockMenuBest.text = this._lastScore.toFixed(1).toString();
+                                
+                            }
+                            
+
+                            this._state = State.WIN_IN;
+                            setInterval(() => {
+                                if (this._state === State.WIN_IN) {
+                                    this._state = State.WIN;
+                                }
+                            }, 1500);
+                        }
+                        else {
+                            this._state = State.LOSE;
+                        }
                     }
                     break;
                 //3
                 case State.WIN:
 
-                    if (score > lastScore) lastScore = score;
-
-
                     this._level++;
 
                     this._textblockScoreGame.text = `Pontos: ${score.toFixed(1)} m`;
-                    this._textblockEnd.text = `Para passar o próximo nível, é necessário fazer uma pontuação maior que: ${lastScore.toFixed(1)} m.`;
+                    this._textblockEnd.text = `Para passar o próximo nível, é necessário fazer uma pontuação maior que: ${this._lastScore.toFixed(1)} m.`;
                     this._buttonMenuContinuar.textBlock.text = "Próximo nível!"
                     this._rectangleGame.isVisible = true;
 
                     this._state = State.WIN_OUT;
 
-                                        
+
                     break;
 
                 //4
                 case State.LOSE:
 
                     this._textblockScoreGame.text = `Pontos: 0.0`;
-                    this._textblockEnd.text = `Para passar deste nível você precisa pegar o vaso com uma pontuação maior que: ${lastScore.toFixed(1)} m.`;
+                    this._textblockEnd.text = `Para passar deste nível você deveria ter feito uma pontuação maior que: ${this._lastScore.toFixed(1)} m.`;
 
                     this._buttonMenuContinuar.textBlock.text = "Tentar novamente!"
+
                     this._rectangleGame.isVisible = true;
                     this._state = State.LOSE_OUT;
 
@@ -277,7 +299,7 @@ class App {
         await this._scene.whenReadyAsync();
 
         //*
-        this._scene.debugLayer.show();
+        //this._scene.debugLayer.show();
 
 
         let root: AbstractMesh;
@@ -285,17 +307,12 @@ class App {
         root.rotation = new Vector3(0, 0, 0);
 
         //--PICK SIMPLES OR PICK RAY --
+
         this._scene.onPointerDown = () => {
             if (this._state === State.GAME) {
                 if (this._isVasePicked === false) {
                     this._isVasePicked = true;
                 }
-                this._state = State.WIN_IN;
-                setInterval(() => {
-                    if (this._state === State.WIN_IN) {
-                        this._state = State.WIN;
-                    }
-                }, 1500);
             }
         }
 
@@ -374,38 +391,68 @@ class App {
 
         this._textblockLevel = advancedTexture.getControlByName("TextblockLevel") as TextBlock;
 
+        this._textblockMenuBest = advancedTexture.getControlByName("TextblockMenuBest") as TextBlock;
+
         this._rectangleMenu = advancedTexture.getControlByName("RectangleMenu") as Rectangle;
 
         this._rectangleGame = advancedTexture.getControlByName("RectangleGame") as Rectangle;
 
         const buttonMenu: Button = advancedTexture.getControlByName("ButtonMenu") as Button;
+
         buttonMenu.onPointerUpObservable.add(() => {
+
             this._rectangleMenu.isVisible = true;
+            this._level = 1;
+
+            for (let i = 0; i < this._extraFloors.length; i++) {
+                if (this._extraFloors[i].name.startsWith("Clone")) {
+                    this._extraFloors[i].dispose();
+                }
+            }
+
             this._restartScene();
+
             this._state = State.default;
+
         });
 
         this._buttonMenuContinuar = advancedTexture.getControlByName("ButtonMenuContinuar") as Button;
         this._buttonMenuContinuar.onPointerUpObservable.add(() => {
 
-            if(this._state === State.WIN_OUT){
-                
+            if (this._state === State.WIN_OUT) {
+
+                let newFloor: TransformNode;
+
+                newFloor = this._scene.getTransformNodeByName("building1").instantiateHierarchy();
+
+                newFloor.position.y += ((this._level - 1) * 2.5);
+
+                this._extraFloors.push(newFloor);
+
+
                 this._state = State.START;
                 setTimeout(() => {
                     this._state = State.GAME;
                 }, 2000);
 
             }
-            else if(this._state === State.LOSE_OUT){
-                
-                this._state = State.START;
-                setTimeout(() => {
-                    this._state = State.GAME;
-                }, 2000);
+            else if (this._state === State.LOSE_OUT) {
+                this._rectangleMenu.isVisible = true;
+                this._level = 1;
+
+                for (let i = 0; i < this._extraFloors.length; i++) {
+                    if (this._extraFloors[i].name.startsWith("Clone")) {
+                        this._extraFloors[i].dispose();
+                    }
+                }
+
+                this._restartScene();
+
+                this._state = State.default;
 
             }
 
-            
+
         });
 
 
@@ -449,16 +496,18 @@ class App {
 
     private _restartScene() {
 
-        
+
         this._rectangleGame.isVisible = false;
 
-        this._vase.position.y = 2.5*(this._level +1);
+        this._vase.position.y = 2.5 * (this._level + 1);
         this._vase.rotation = Vector3.Zero();
         this._isVasePicked = false;
-        this._camera.position = new Vector3(3, 2.5*(this._level +1) -1 , -12);
-        this._camera.setTarget(new Vector3(0, 2.5*(this._level +1) -1, 0)); //targets the camera to scene origin
+        this._camera.position = new Vector3(3, 2.5 * (this._level + 1) - 1, -12);
+        this._camera.setTarget(new Vector3(0, 2.5 * (this._level + 1) - 1, 0)); //targets the camera to scene origin
 
-    
+
+        this._state = State.default;
+
 
         //this._state = State.GAME;
     };
