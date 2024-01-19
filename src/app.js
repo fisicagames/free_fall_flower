@@ -7,7 +7,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import "@babylonjs/inspector";
 import { Engine, Scene, ArcRotateCamera, Vector3, HemisphericLight, Color4, Sound, ScenePerformancePriority, SceneLoader } from "@babylonjs/core";
 import { AdvancedDynamicTexture } from "@babylonjs/gui";
 import "@babylonjs/loaders";
@@ -82,6 +81,18 @@ class App {
             writable: true,
             value: void 0
         });
+        Object.defineProperty(this, "_rectangleGame", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_textBlockEquation", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this._canvas = this._createCanvas();
         this._state = State.START;
         this._init();
@@ -133,30 +144,38 @@ class App {
         return __awaiter(this, void 0, void 0, function* () {
             yield this._startGame();
             let time = 0;
+            let height = 0;
             this._engine.runRenderLoop(() => {
                 this._scene.render();
                 switch (this._state) {
                     case State.START:
                         this._restartScene();
                         time = 0;
+                        height = 0;
+                        this._textBlockEquation.text = `For ${time.toFixed(1)} s, the vase fall ${height.toFixed(1)} m`;
                         break;
                     case State.GAME:
-                        if (this._vase.position.y > 0 && this._isVasePicked === false) {
-                            console.log("Dentro do primeiro if ", this._state);
+                        if (height < 4.99 && this._isVasePicked === false) {
+                            this._vase.position.y = 5 - height;
+                            this._camera.setTarget(new Vector3(0, 4 - height / 2, 0));
+                            this._textBlockEquation.text = `For ${time.toFixed(1)} s, the vase fall ${height.toFixed(1)} m`;
                             time += this._engine.getDeltaTime() / 1000;
-                            this._vase.position.y = 5 - 9.8 / 2 * Math.pow(time, 2);
-                            this._camera.setTarget(new Vector3(0, 4 - 4.5 / 2 * Math.pow(time, 2), 0));
+                            time = Number(time.toFixed(2));
+                            height = (9.8 * Math.pow(time, 2)) / 2;
                         }
                         else if (this._isVasePicked === false) {
+                            height = 5;
+                            time = Math.sqrt(2 * height / 9.8);
+                            this._textBlockEquation.text = `For ${time.toFixed(1)} s, the vase fall ${height.toFixed(1)} m`;
                             this._vase.rotate(Vector3.Backward(), Math.PI / 2);
                             this._vase.position.y = 0;
                             this._state = State.LOSE;
                         }
                         break;
                     case State.WIN:
-                        {
-                        }
+                        this._rectangleGame.isVisible = true;
                     case State.LOSE:
+                        this._rectangleGame.isVisible = true;
                         break;
                     default:
                         break;
@@ -174,7 +193,6 @@ class App {
             yield this._loadGUI(this._scene);
             yield this._loadModels(this._scene);
             yield this._scene.whenReadyAsync();
-            this._scene.debugLayer.show();
             let root;
             root = this._scene.getMeshByName("__root__");
             root.rotation = new Vector3(0, 0, 0);
@@ -186,7 +204,6 @@ class App {
                     this._state = State.WIN_TRANSITION;
                     setInterval(() => {
                         if (this._state === State.WIN_TRANSITION) {
-                            console.log("transition to win");
                             this._state = State.WIN;
                         }
                     }, 1500);
@@ -234,8 +251,12 @@ class App {
         return __awaiter(this, void 0, void 0, function* () {
             const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("GUI", true, scene);
             const loadedGUI = yield advancedTexture.parseFromURLAsync("./assets/gui/guiTexture.json");
+            this._textBlockEquation =
+                advancedTexture.getControlByName("TextBlockEquation");
             this._rectangleMenu =
                 advancedTexture.getControlByName("RectangleMenu");
+            this._rectangleGame =
+                advancedTexture.getControlByName("RectangleGame");
             const buttonMenu = advancedTexture.getControlByName("ButtonMenu");
             buttonMenu.onPointerUpObservable.add(() => {
                 this._rectangleMenu.isVisible = true;
@@ -243,7 +264,6 @@ class App {
                 this._state = State.default;
             });
             const buttonMenuStart = advancedTexture.getControlByName("ButtonMenuStart");
-            ;
             buttonMenuStart.onPointerUpObservable.add(() => {
                 this._rectangleMenu.isVisible = false;
                 this._state = State.START;
@@ -273,9 +293,10 @@ class App {
         });
     }
     _restartScene() {
+        this._rectangleGame.isVisible = false;
         this._vase.position.y = 5;
         this._vase.rotation = Vector3.Zero();
-        this._isVasePicked == false;
+        this._isVasePicked = false;
         this._camera.position = new Vector3(3, 4, -12);
         this._camera.setTarget(new Vector3(0, 4, 0));
         this._state = State.default;
