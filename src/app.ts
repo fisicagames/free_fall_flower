@@ -9,7 +9,7 @@
 
 //import "@babylonjs/core/Debug/debugLayer";
 
-//import "@babylonjs/inspector";
+import "@babylonjs/inspector";
 
 import {
     Engine, Scene, ArcRotateCamera, Vector3,
@@ -68,6 +68,7 @@ class App {
 
     //Models
     private _vase: TransformNode;
+    private _firstFloorModels: TransformNode[];
 
     //GUI
     private _rectangleMenu: Rectangle;
@@ -153,7 +154,7 @@ class App {
         let score: number = 0;
         let lastScore: number = 0;
         let heightMax: number;
-        heightMax = Number((this._level * 5).toFixed(1));
+        heightMax = Number((2.5*(this._level +1)).toFixed(1));
         let timeMax: number;
         timeMax = Math.sqrt(2*heightMax/9.8);
 
@@ -168,7 +169,7 @@ class App {
                 case State.START:
                     //console.log(this._state);
                     this._restartScene();
-                    heightMax = Number((this._level * 5).toFixed(1));
+                    heightMax = Number((2.5*(this._level +1)).toFixed(1));
                     timeMax = Math.sqrt(2*heightMax/9.8);
 
                     time = 0;
@@ -182,9 +183,9 @@ class App {
                 case State.GAME:
                     if (height < heightMax - 0.05 && this._isVasePicked === false) {
                         this._vase.rotation = new Vector3(0.1,0,-0.1);
-                        this._vase.position.y = 5*this._level - height;
-                        this._camera.setTarget(new Vector3(0, 5 * this._level -1 - height / 2, 0));
-                        this._camera.position = new Vector3(3, 5 * this._level -1 , -12);
+                        this._vase.position.y = heightMax - height;
+                        this._camera.setTarget(new Vector3(0, 2.5*(this._level +1) -1 - height, 0));
+                        this._camera.position = new Vector3(3, 2.5*(this._level +1) -1 , -12);
 
                         this._textBlockEquation.text = `Para ${time.toFixed(1)} s, a queda é de ${height.toFixed(1)} m.`;
                         score = height;
@@ -196,7 +197,7 @@ class App {
                     }
                     else if (this._isVasePicked === false) {
 
-                        height = 5;
+                        height = 2.5*(this._level +1);
                         time = Math.sqrt(2 * height / 9.8);
                         this._textBlockEquation.text = `Para ${time.toFixed(1)} s, a queda é de ${height.toFixed(1)} m.`;
 
@@ -276,7 +277,7 @@ class App {
         await this._scene.whenReadyAsync();
 
         //*
-        //this._scene.debugLayer.show();
+        this._scene.debugLayer.show();
 
 
         let root: AbstractMesh;
@@ -449,15 +450,13 @@ class App {
     private _restartScene() {
 
         
-
         this._rectangleGame.isVisible = false;
 
-        this._vase.position.y = 5 * this._level;
+        this._vase.position.y = 2.5*(this._level +1);
         this._vase.rotation = Vector3.Zero();
-
         this._isVasePicked = false;
-        this._camera.position = new Vector3(3, 5 * this._level -1 , -12);
-        this._camera.setTarget(new Vector3(0, 5 * this._level -1, 0)); //targets the camera to scene origin
+        this._camera.position = new Vector3(3, 2.5*(this._level +1) -1 , -12);
+        this._camera.setTarget(new Vector3(0, 2.5*(this._level +1) -1, 0)); //targets the camera to scene origin
 
     
 
