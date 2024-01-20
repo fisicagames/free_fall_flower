@@ -10,6 +10,7 @@
 //import "@babylonjs/core/Debug/debugLayer";
 
 //import "@babylonjs/inspector";
+//import "@babylonjs/inspector";
 
 import {
     Engine, Scene, ArcRotateCamera, Vector3,
@@ -299,6 +300,7 @@ class App {
         await this._scene.whenReadyAsync();
 
         //*
+        //this._scene.debugLayer.show();
         //this._scene.debugLayer.show();
 
 
