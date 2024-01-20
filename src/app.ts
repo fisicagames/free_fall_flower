@@ -27,7 +27,7 @@ import "@babylonjs/loaders";
 //WEB SITES REFERENCES:
 //https://github.com/BabylonJS/SummerFestival/tree/master
 
-//https://gui.babylonjs.com/#JSGZVD#26
+//https://gui.babylonjs.com/#JSGZVD#28
 //https://latex.codecogs.com/png.image?\huge&space;\dpi{150}{\color{white}h=\frac{g\cdot&space;t^{2}}{2}}
 //https://colorhunt.co/palette/00bdaa400082fe346ef1e7b6
 //https://color.adobe.com/pt/create/color-wheel
@@ -170,15 +170,15 @@ class App {
             switch (this._state) {
                 //1
                 case State.START:
-                    //console.log(this._state);
+                    
                     this._restartScene();
                     heightMax = Number((2.5 * (this._level + 1)).toFixed(1));
                     timeMax = Math.sqrt(2 * heightMax / 9.8);
 
                     time = 0;
                     height = 0;
-                    this._textblockLevel.text = `Nível: ${this._level}     h = ${heightMax.toFixed(1)} m     t = ${timeMax.toFixed(1)} s `;
-                    this._textBlockEquation.text = `Para ${time.toFixed(1)} s, a queda é de ${height.toFixed(1)} m.`;
+                    this._textblockLevel.text = `Nível: ${this._level}     h = ${heightMax.toFixed(1).replace(".", ",")} m     t = ${timeMax.toFixed(1).replace(".", ",")} s `;
+                    this._textBlockEquation.text = `Para ${time.toFixed(1).replace(".", ",")} s, a queda é de ${height.toFixed(1).replace(".", ",")} m.`;
 
                     break;
                 //2
@@ -189,7 +189,7 @@ class App {
                         this._camera.setTarget(new Vector3(0, 2.5 * (this._level + 1) - 1 - height, 0));
                         this._camera.position = new Vector3(3, 2.5 * (this._level + 1) - 1, -12);
 
-                        this._textBlockEquation.text = `Para ${time.toFixed(1)} s, a queda é de ${height.toFixed(1)} m.`;
+                        this._textBlockEquation.text = `Para ${time.toFixed(1).replace(".", ",")} s, a queda é de ${height.toFixed(1).replace(".", ",")} m.`;
                         score = height;
                         time += this._engine.getDeltaTime() / 1000;
                         time = Number(time.toFixed(2));
@@ -201,7 +201,7 @@ class App {
 
                         height = 2.5 * (this._level + 1);
                         time = Math.sqrt(2 * height / 9.8);
-                        this._textBlockEquation.text = `Para ${time.toFixed(1)} s, a queda é de ${height.toFixed(1)} m.`;
+                        this._textBlockEquation.text = `Para ${time.toFixed(1).replace(".", ",")} s, a queda é de ${height.toFixed(1).replace(".", ",")} m.`;
 
                         this._vase.rotate(Vector3.Backward(), Math.PI / 2)
                         this._vase.position.y = 0;
@@ -215,13 +215,12 @@ class App {
                         //this._state = State.default;
                     }
                     else if (this._isVasePicked === true) {
-                        console.log("win or lose", height, this._lastScore);
 
                         if (score > this._lastScore) {
                             this._lastScore = score;
                             if (this._lastScore > this._bestScore) {
                                 this._bestScore = this._lastScore;
-                                this._textblockMenuBest.text = this._lastScore.toFixed(1).toString();
+                                this._textblockMenuBest.text = this._lastScore.toFixed(1).toString().replace(".", ",");
                                 
                             }
                             
@@ -243,8 +242,8 @@ class App {
 
                     this._level++;
 
-                    this._textblockScoreGame.text = `Pontos: ${score.toFixed(1)} m`;
-                    this._textblockEnd.text = `Para passar o próximo nível, é necessário fazer uma pontuação maior que: ${this._lastScore.toFixed(1)} m.`;
+                    this._textblockScoreGame.text = `Pontos: ${score.toFixed(1).replace(".", ",")} m  em ${time.toFixed(1).replace(".", ",")} s`;
+                    this._textblockEnd.text = `Para passar o próximo nível, é necessário fazer uma pontuação maior que a anterior: ${this._lastScore.toFixed(1).replace(".", ",")} m.`;
                     this._buttonMenuContinuar.textBlock.text = "Próximo nível!"
                     this._rectangleGame.isVisible = true;
 
@@ -257,7 +256,7 @@ class App {
                 case State.LOSE:
 
                     this._textblockScoreGame.text = `Pontos: 0.0`;
-                    this._textblockEnd.text = `Para passar deste nível você deveria ter feito uma pontuação maior que: ${this._lastScore.toFixed(1)} m.`;
+                    this._textblockEnd.text = `Para passar deste nível você deveria ter feito uma pontuação maior que a anterior: ${this._lastScore.toFixed(1)} m.`;
 
                     this._buttonMenuContinuar.textBlock.text = "Tentar novamente!"
 
