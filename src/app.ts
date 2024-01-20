@@ -403,6 +403,7 @@ class App {
 
             this._rectangleMenu.isVisible = true;
             this._level = 1;
+            this._lastScore = 0;
 
             for (let i = 0; i < this._extraFloors.length; i++) {
                 if (this._extraFloors[i].name.startsWith("Clone")) {
@@ -439,6 +440,7 @@ class App {
             else if (this._state === State.LOSE_OUT) {
                 this._rectangleMenu.isVisible = true;
                 this._level = 1;
+                this._lastScore = 0;
 
                 for (let i = 0; i < this._extraFloors.length; i++) {
                     if (this._extraFloors[i].name.startsWith("Clone")) {
