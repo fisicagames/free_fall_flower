@@ -15,7 +15,7 @@
 import {
     Engine, Scene, ArcRotateCamera, Vector3,
     HemisphericLight, Color4, Sound, ScenePerformancePriority,
-    SceneLoader, TransformNode, AbstractMesh
+    SceneLoader, TransformNode, AbstractMesh, Tools
 } from "@babylonjs/core";
 import {
     AdvancedDynamicTexture, TextBlock, Button,
@@ -178,9 +178,19 @@ class App {
 
                     time = 0;
                     height = 0;
-                    this._lang == 0 ? this._textblockLevel.text = `Nível: ${this._level}     h = ${heightMax.toFixed(1).replace(".", ",")} m     t = ${timeMax.toFixed(1).replace(".", ",")} s `: `Level: ${this._level}     h = ${heightMax.toFixed(1)} m     t = ${timeMax.toFixed(1)} s `
 
-                    this._lang == 0 ? this._textBlockEquation.text = `Para ${time.toFixed(1).replace(".", ",")} s, a queda é de ${height.toFixed(1).replace(".", ",")} m.`: this._textBlockEquation.text = `For ${time.toFixed(1)} s, the fall is ${height.toFixed(1)} m.`
+                    if (this._lang == 0){
+                        
+                        this._textblockLevel.text = `Nível: ${this._level}     h = ${heightMax.toFixed(1).replace(".", ",")} m     t = ${timeMax.toFixed(1).replace(".", ",")} s `;
+
+                        this._textBlockEquation.text = `Para ${time.toFixed(1).replace(".", ",")} s, a queda é de ${height.toFixed(1).replace(".", ",")} m.`;
+                    }
+                    else {
+                        this._textblockLevel.text = `Level: ${this._level}     h = ${heightMax.toFixed(1)} m     t = ${timeMax.toFixed(1)} s `;
+                        
+                        this._textBlockEquation.text = `For ${time.toFixed(1)} s, the fall is ${height.toFixed(1)} m.`;
+
+                    }
 
                     break;
                 //2
@@ -246,14 +256,15 @@ class App {
 
                     this._level++;
 
-                    this._lang == 0 ? this._textblockScoreGame.text = `Pontos: ${score.toFixed(1).replace(".", ",")} m  em ${time.toFixed(1).replace(".", ",")} s`:this._textblockScoreGame.text = `Points: ${score.toFixed(1)} m  in ${time.toFixed(1)} s`;
-
-
-                    this._lang == 0 ? this._textblockEnd.text = `Para passar o próximo nível, é necessário fazer uma pontuação maior que a anterior: ${this._lastScore.toFixed(1).replace(".", ",")} m.`: this._textblockEnd.text = `o advance to the next level, you need to score higher than before: ${this._lastScore.toFixed(1)} m.`
-
-
-
-                    this._lang == 0 ? this._buttonMenuContinuar.textBlock.text = "Próximo nível!": this._buttonMenuContinuar.textBlock.text = "Next Level!";
+                    if (this._lang === 0) {
+                        this._textblockScoreGame.text = `Pontos: ${score.toFixed(1).replace(".", ",")} m  em ${time.toFixed(1).replace(".", ",")} s`;
+                        this._textblockEnd.text = `Para passar o próximo nível, é necessário fazer uma pontuação maior que a anterior: ${this._lastScore.toFixed(1).replace(".", ",")} m.`;
+                        this._buttonMenuContinuar.textBlock.text = "Próximo nível!";
+                    } else {
+                        this._textblockScoreGame.text = `Points: ${score.toFixed(1)} m  in ${time.toFixed(1)} s`;
+                        this._textblockEnd.text = `To advance to the next level, you need to score higher than before: ${this._lastScore.toFixed(1)} m.`;
+                        this._buttonMenuContinuar.textBlock.text = "Next Level!";
+                    }
 
                     this._rectangleGame.isVisible = true;
 
@@ -265,15 +276,16 @@ class App {
                 //4
                 case State.LOSE:
 
-                    this._lang == 0 ? this._textblockScoreGame.text = `Pontos: 0,0`:this._textblockScoreGame.text = `Points: 0.0`;
-
-
-                    this._lang == 0 ? this._textblockEnd.text = `Para passar deste nível você deveria ter feito uma pontuação maior que a anterior: ${this._lastScore.toFixed(1)} m.`:this._textblockEnd.text = `To advance from this level, you should have scored higher than before: ${this._lastScore.toFixed(1)} m.`;
-
-
-
-                    this._lang == 0 ? this._buttonMenuContinuar.textBlock.text = "Tentar novamente!":this._buttonMenuContinuar.textBlock.text = "Try again!"
-                
+                    if (this._lang === 0) {
+                        this._textblockScoreGame.text = `Pontos: 0,0`;
+                        this._textblockEnd.text = `Para passar deste nível você deveria ter feito uma pontuação maior que a anterior: ${this._lastScore.toFixed(1)} m.`;
+                        this._buttonMenuContinuar.textBlock.text = "Tentar novamente!";
+                    } else {
+                        this._textblockScoreGame.text = `Points: 0.0`;
+                        this._textblockEnd.text = `To advance from this level, you should have scored higher than before: ${this._lastScore.toFixed(1)} m.`;
+                        this._buttonMenuContinuar.textBlock.text = "Try again!";
+                    }
+                                   
 
                     this._rectangleGame.isVisible = true;
                     this._state = State.LOSE_OUT;
@@ -420,7 +432,7 @@ class App {
         buttonLang.onPointerUpObservable.add(() => {
             
             this._lang == 1 ? this._lang = 0: this._lang = 1;
-            this._changeLanguage(this._lang,advancedTexture)
+            this._changeLanguage(this._lang,advancedTexture);
                        
         });
 
