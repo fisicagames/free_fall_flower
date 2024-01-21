@@ -68,7 +68,7 @@ class App {
     private _level: number = 1;
     private _lastScore: number = 0;
     private _bestScore: number = 0;
-    private _lang: number = 0; 
+    private _lang: number = 0;
 
     //Models
     private _vase: TransformNode;
@@ -179,15 +179,15 @@ class App {
                     time = 0;
                     height = 0;
 
-                    if (this._lang == 0){
-                        
+                    if (this._lang == 0) {
+
                         this._textblockLevel.text = `Nível: ${this._level}     h = ${heightMax.toFixed(1).replace(".", ",")} m     t = ${timeMax.toFixed(1).replace(".", ",")} s `;
 
                         this._textBlockEquation.text = `Para ${time.toFixed(1).replace(".", ",")} s, a queda é de ${height.toFixed(1).replace(".", ",")} m.`;
                     }
                     else {
                         this._textblockLevel.text = `Level: ${this._level}     h = ${heightMax.toFixed(1)} m     t = ${timeMax.toFixed(1)} s `;
-                        
+
                         this._textBlockEquation.text = `For ${time.toFixed(1)} s, the fall is ${height.toFixed(1)} m.`;
 
                     }
@@ -201,7 +201,7 @@ class App {
                         this._camera.setTarget(new Vector3(0, 2.5 * (this._level + 1) - 1 - height, 0));
                         this._camera.position = new Vector3(3, 2.5 * (this._level + 1) - 1, -12);
 
-                        this._lang == 0 ? this._textBlockEquation.text = `Para ${time.toFixed(1).replace(".", ",")} s, a queda é de ${height.toFixed(1).replace(".", ",")} m.`: this._textBlockEquation.text = `For ${time.toFixed(1)} s, the fall is ${height.toFixed(1)} m.`
+                        this._lang == 0 ? this._textBlockEquation.text = `Para ${time.toFixed(1).replace(".", ",")} s, a queda é de ${height.toFixed(1).replace(".", ",")} m.` : this._textBlockEquation.text = `For ${time.toFixed(1)} s, the fall is ${height.toFixed(1)} m.`
 
                         score = height;
                         time += this._engine.getDeltaTime() / 1000;
@@ -215,7 +215,7 @@ class App {
                         height = 2.5 * (this._level + 1);
                         time = Math.sqrt(2 * height / 9.8);
 
-                        this._lang == 0 ? this._textBlockEquation.text = `Para ${time.toFixed(1).replace(".", ",")} s, a queda é de ${height.toFixed(1).replace(".", ",")} m.`: this._textBlockEquation.text = `For ${time.toFixed(1)} s, the fall is ${height.toFixed(1)} m.`
+                        this._lang == 0 ? this._textBlockEquation.text = `Para ${time.toFixed(1).replace(".", ",")} s, a queda é de ${height.toFixed(1).replace(".", ",")} m.` : this._textBlockEquation.text = `For ${time.toFixed(1)} s, the fall is ${height.toFixed(1)} m.`
 
                         this._vase.rotate(Vector3.Backward(), Math.PI / 2)
                         this._vase.position.y = 0;
@@ -234,7 +234,7 @@ class App {
                             this._lastScore = score;
                             if (this._lastScore > this._bestScore) {
                                 this._bestScore = this._lastScore;
-                                this._lang == 0 ? this._textblockMenuBest.text = this._lastScore.toFixed(1).toString().replace(".", ","):this._textblockMenuBest.text = this._lastScore.toFixed(1).toString();
+                                this._lang == 0 ? this._textblockMenuBest.text = this._lastScore.toFixed(1).toString().replace(".", ",") : this._textblockMenuBest.text = this._lastScore.toFixed(1).toString();
 
                             }
 
@@ -285,7 +285,7 @@ class App {
                         this._textblockEnd.text = `To advance from this level, you should have scored higher than before: ${this._lastScore.toFixed(1)} m.`;
                         this._buttonMenuContinuar.textBlock.text = "Try again!";
                     }
-                                   
+
 
                     this._rectangleGame.isVisible = true;
                     this._state = State.LOSE_OUT;
@@ -430,13 +430,15 @@ class App {
         const buttonLang: Button = advancedTexture.getControlByName("ButtonLang") as Button;
 
         buttonLang.onPointerUpObservable.add(() => {
-            
-            this._lang == 1 ? this._lang = 0: this._lang = 1;
-            this._changeLanguage(this._lang,advancedTexture);
-                       
+
+            this._lang == 1 ? this._lang = 0 : this._lang = 1;
+            this._changeLanguage(this._lang, advancedTexture);
+
+            let image = this._canvas.toDataURL('image/jpeg');
+
         });
 
-        
+
 
         buttonMenu.onPointerUpObservable.add(() => {
 
@@ -568,20 +570,20 @@ class App {
         ButtonLang: ["ENGLISH", "PORTUGUÊS"]
     };
 
-    
-    private _changeLanguage(lang: number, advancedTexture: AdvancedDynamicTexture ) {
+
+    private _changeLanguage(lang: number, advancedTexture: AdvancedDynamicTexture) {
         for (const key in this._strings) {
             if (this._strings.hasOwnProperty(key)) {
                 const translations = this._strings[key];
-                if (key.startsWith(`Tex`)){
+                if (key.startsWith(`Tex`)) {
                     const textBlock = advancedTexture.getControlByName(key) as TextBlock;
-                    textBlock.text = translations[lang];                    
+                    textBlock.text = translations[lang];
                 }
-                else{
+                else {
                     const textBlock = advancedTexture.getControlByName(key) as Button;
-                    textBlock.textBlock.text = translations[lang];                    
+                    textBlock.textBlock.text = translations[lang];
                 }
-                
+
             }
         }
     }
