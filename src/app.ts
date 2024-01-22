@@ -434,9 +434,18 @@ class App {
             this._lang == 1 ? this._lang = 0 : this._lang = 1;
             this._changeLanguage(this._lang, advancedTexture);
 
-            let image = this._canvas.toDataURL('image/jpeg');
+            this._lang == 0 ? this._textblockMenuBest.text = this._textblockMenuBest.text.replace(".", ",") : this._textblockMenuBest.text = this._textblockMenuBest.text.replace(",", ".");
+
 
         });
+
+        const textblockMenuLink: TextBlock = advancedTexture.getControlByName("TextblockMenuLink") as TextBlock;
+        textblockMenuLink.onPointerUpObservable.add(()=> {
+            //window.open("https://fisicagames.com.br")
+            location.href = "https://fisicagames.com.br";
+
+        });
+
 
 
 
