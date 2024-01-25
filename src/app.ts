@@ -6,6 +6,7 @@
 //3. Add ./ in index.html
 //4. Remove test lines //* 
 
+// To do: Tools.CreateScreenshot(this._engine,this._camera, {width:540, height:960});
 
 //import "@babylonjs/core/Debug/debugLayer";
 
@@ -15,7 +16,7 @@
 import {
     Engine, Scene, ArcRotateCamera, Vector3,
     HemisphericLight, Color4, Sound, ScenePerformancePriority,
-    SceneLoader, TransformNode, AbstractMesh, Tools
+    SceneLoader, TransformNode, AbstractMesh
 } from "@babylonjs/core";
 import {
     AdvancedDynamicTexture, TextBlock, Button,
@@ -581,6 +582,7 @@ class App {
 
 
     private _changeLanguage(lang: number, advancedTexture: AdvancedDynamicTexture) {
+        
         for (const key in this._strings) {
             if (this._strings.hasOwnProperty(key)) {
                 const translations = this._strings[key];
