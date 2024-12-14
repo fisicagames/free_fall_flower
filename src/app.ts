@@ -429,7 +429,16 @@ class App {
         const buttonMenu: Button = advancedTexture.getControlByName("ButtonMenu") as Button;
 
         const buttonLang: Button = advancedTexture.getControlByName("ButtonLang") as Button;
-
+        
+        //Feature added on 2024-12-13: Automatically set the language based on the browser's settings.
+        const browserLanguage = navigator.language || "en";
+        if (!browserLanguage.startsWith("pt")) {
+            this._lang == 1 ? this._lang = 0 : this._lang = 1;
+            this._changeLanguage(this._lang, advancedTexture);
+            this._lang == 0 ? this._textblockMenuBest.text = this._textblockMenuBest.text.replace(".", ",") : this._textblockMenuBest.text = this._textblockMenuBest.text.replace(",", ".");
+        }
+        //
+        
         buttonLang.onPointerUpObservable.add(() => {
 
             this._lang == 1 ? this._lang = 0 : this._lang = 1;
